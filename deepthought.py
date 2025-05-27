@@ -2,11 +2,10 @@
 from concurrent.futures import wait
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from openai import OpenAI
+from openai import AzureOpenAI
 from pathlib import Path
 from pymongo import MongoClient
 from pypdf import PdfReader
-from pypdf.errors import PdfReadError
 from requests_futures.sessions import FuturesSession
 import copy
 import datetime
@@ -16,10 +15,12 @@ import logging
 import os
 import random
 import requests
-import smtplib
 import sys
 import urllib
 import urllib3
+import dotenv
+
+dotenv.load_dotenv(".env")
 
 from llmlingua import PromptCompressor
 llm_lingua = PromptCompressor(
@@ -42,9 +43,14 @@ BASE_OFFSET = 0
 COMPRESS_PROMPT = True
 EMAIL_LIST = []
 MAX_RESULTS = 200
-OAI = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+OAI = AzureOpenAI(
+    azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    api_version="2025-01-01-preview"
+)
 PROCESS_DAYS = 7
 PAPER_PATH = "papers/"
+os.makedirs(PAPER_PATH, exist_ok=True)
 SEARCHES = [
     {'search_query': 'all:"prompt%20injection"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"jailbreak"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
@@ -60,7 +66,6 @@ SEARCHES = [
 ]
 SENDER_EMAIL = ''
 FROM_EMAIL = ''
-APP_PASSWORD = os.environ.get("GOOG_APP_PASSKEY")
 SYSTEM_PROMPT = """Assume the role of a technical writer. Present the main findings of the research succinctly. Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.' Focus on outcomes, significant percentages or statistics, and their broader implications. Each point should stand on its own, conveying a clear fact or insight relevant to the field of study.
 
 Format the output as a JSON object that follows the following template.
@@ -282,7 +287,7 @@ def summarize_records(records):
         if COMPRESS_PROMPT:
             oai_summarize = compress_content(metadata)
         results = OAI.chat.completions.create(
-            model="gpt-4o",
+            model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": oai_summarize},
@@ -302,21 +307,6 @@ def summarize_records(records):
         setter = {'$set': update}
         RESEARCH_DB.update_one(query, setter)
     return True
-
-
-def send_mail(subject, content, send_to):
-    """Send mail out to users."""
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(SENDER_EMAIL, APP_PASSWORD)
-    message = MIMEMultipart('alternative')
-    message['subject'] = subject
-    message['From'] = FROM_EMAIL
-    message['To'] = send_to
-    message.attach(MIMEText(content['plain'], 'plain'))
-    message.attach(MIMEText(content['html'], 'html'))
-    server.sendmail(message['From'], message['To'], message.as_string())
-    server.quit()
 
 
 def share_results():
@@ -347,10 +337,6 @@ def share_results():
         content['markdown'] += "\\\\"
 
     logger.debug(content)
-    if len(content['plain']) > 0:
-        for user in EMAIL_LIST:
-            subject = "[%s] GAI Security News" % (TODAY[:10])
-            send_mail(subject, content, user)
 
     for record in tmp:
         query = {'id': record['id']}
@@ -361,7 +347,6 @@ def share_results():
 
 
 if __name__ == "__main__":
-    """I run, therefore I am."""
 
     logger.info("[*] Executing searches...")
     feeds = execute_searches(BASE_URL, SEARCHES, list())

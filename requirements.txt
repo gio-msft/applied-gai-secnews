@@ -47,3 +47,4 @@ transformers==4.40.1
 typing_extensions==4.10.0
 urllib3==2.2.1
 wrapt==1.16.0
+dotenv==1.1.0
