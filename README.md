@@ -1,5 +1,10 @@
 # GAI Security News
-Collect security related news published in research spaces.
+Collect security related news published in research spaces. This code has powered the weekely "Last Week in GAI Security Research" on the https://applied-gai-in-security.ghost.io/ page. It is being made opensource for others to use on their own. 
+
+## Setup
+- MongoDB instance
+- Generate a "papers" folder in local directory with code
+- Google App Password to enable sending via email (can be stripped)
 
 ## Flow
 1. Run grouped queries against arxiv API
