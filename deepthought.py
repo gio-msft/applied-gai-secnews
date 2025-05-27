@@ -282,7 +282,7 @@ def summarize_records(records):
         if COMPRESS_PROMPT:
             oai_summarize = compress_content(metadata)
         results = OAI.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": oai_summarize},
