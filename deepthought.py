@@ -10,6 +10,7 @@ import logging
 import requests
 import datetime
 import feedparser
+import smtplib
 
 from pathlib import Path
 from pypdf import PdfReader
@@ -18,6 +19,9 @@ from pymongo import MongoClient
 from concurrent.futures import wait
 from llmlingua import PromptCompressor
 from requests_futures.sessions import FuturesSession
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 # Load environment variables from .env file
 # Ensure you have a .env file with AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY set
@@ -64,9 +68,20 @@ SEARCHES = [
     {'search_query': 'all:"hijack"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"backdoor"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"trojan"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"exploit"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"exploit"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"vulnerability"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"hijack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"attack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"backdooor"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"malware"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"phishing"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"hack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"trojan"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
 ]
-SENDER_EMAIL = ''
-FROM_EMAIL = ''
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+FROM_EMAIL = os.environ.get("FROM_EMAIL")
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
 SYSTEM_PROMPT = """Assume the role of a technical writer. 
 Present the main findings of the research succinctly. 
 Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.'
@@ -76,7 +91,9 @@ Each point should stand on its own, conveying a clear fact or insight relevant t
 Format the output as a JSON object that follows the following template.
 
 'findings' // array that contains 3 single-sentence findings.
-'one_liner' // one-liner sentences noting what is interesting in the paper"""
+'one_liner' // one-liner sentences noting what is interesting in the paper\
+'emoji' // a single emoji that represents the paper
+'tag' // a single word tag that represents the paper, this can either be 'security' for papers related to the security of ai systems, 'cyber' for papers related to using ai to help with cybersecurity task, and 'general' for all other items."""
 
 
 def offset_existing_time_future(str_time, delta):
@@ -307,12 +324,26 @@ def summarize_records(records: list) -> bool:
             'summarized': True,
             'points': loaded['findings'],
             'one_liner': loaded['one_liner'],
-            'emoji': ''
+            'emoji': loaded['emoji'] if 'emoji' in loaded else '🔍',
+            'tag': loaded['tag'] if 'tag' in loaded else 'general'
         }
         setter = {'$set': update}
         RESEARCH_DB.update_one(query, setter)
     return True
 
+def send_mail(subject, content, send_to):
+    """Send mail out to users."""
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(SENDER_EMAIL, APP_PASSWORD)
+    message = MIMEMultipart('alternative')
+    message['subject'] = subject
+    message['From'] = FROM_EMAIL
+    message['To'] = send_to
+    message.attach(MIMEText(content['plain'], 'plain'))
+    message.attach(MIMEText(content['html'], 'html'))
+    server.sendmail(message['From'], message['To'], message.as_string())
+    server.quit()
 
 def share_results() -> bool:
     """Prepare any result not yet shared and format."""
@@ -330,9 +361,9 @@ def share_results() -> bool:
 
     content = {'plain': '', 'html': '', 'markdown': ''}
     for record in tmp:
-        content['plain'] += "%s %s - %s - %s\n" % (record['emoji'], record['title'], record['url'], record['one_liner'])
-        content['html'] += "<b>%s %s</b> (<a href='%s' target='_blank'>%s</a>) - %s<br>" % (record['emoji'], record['title'], record['url'], record['url'], record['one_liner'])
-        content['markdown'] += '%s **%s** [source](%s) \n\n %s' % (record['emoji'], record['title'], record['url'], record['one_liner'])
+        content['plain'] += "%s %s\n %s - %s\n - %s\n" % (record['emoji'], record['title'], record['url'], record['tag'],  record['one_liner'])
+        content['html'] += "<b>%s %s</b> (<a href='%s' target='_blank'>%s</a>)<br> %s - %s<br>" % (record['emoji'], record['title'], record['url'], record['url'], record['tag'], record['one_liner'])
+        content['markdown'] += '%s **%s** [source](%s) %s \n\n %s' % (record['emoji'], record['title'], record['url'], record['tag'], record['one_liner'])
         for point in record['points']:
             content['plain'] += "- %s\n" % (point)
             content['html'] += "<li>%s</li>" % (point)
@@ -342,6 +373,10 @@ def share_results() -> bool:
         content['markdown'] += "\n\n<br>\n\n"
 
     logger.debug(content)
+    if len(content['plain']) > 0:
+        for user in EMAIL_LIST:
+            subject = "[%s] AIRT Gen AI Security News" % (TODAY[:10])
+            send_mail(subject, content, user)
 
     for record in tmp:
         query = {'id': record['id']}
