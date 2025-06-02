@@ -339,7 +339,7 @@ def share_results() -> bool:
             content['markdown'] += '\n - %s' % (point)
         content['plain'] += "\n\n"
         content['html'] += "<br>"
-        content['markdown'] += "\n\n<br>"
+        content['markdown'] += "\n\n<br>\n\n"
 
     logger.debug(content)
 
