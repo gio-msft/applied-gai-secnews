@@ -1,35 +1,35 @@
-"""Pull news from arxiv and format for newsletter using GAI."""
-from concurrent.futures import wait
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from openai import AzureOpenAI
-from pathlib import Path
-from pymongo import MongoClient
-from pypdf import PdfReader
-from requests_futures.sessions import FuturesSession
-import copy
-import datetime
-import feedparser
-import json
-import logging
 import os
-import random
-import requests
 import sys
+import copy
+import json
+import dotenv
+import random
 import urllib
 import urllib3
-import dotenv
+import logging
+import requests
+import datetime
+import feedparser
 
+from pathlib import Path
+from pypdf import PdfReader
+from openai import AzureOpenAI
+from pymongo import MongoClient
+from concurrent.futures import wait
+from llmlingua import PromptCompressor
+from requests_futures.sessions import FuturesSession
+
+# Load environment variables from .env file
+# Ensure you have a .env file with AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY set
 dotenv.load_dotenv(".env")
 
-from llmlingua import PromptCompressor
 llm_lingua = PromptCompressor(
     model_name="microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
     use_llmlingua2=True,
     device_map="cpu"
 )
 
-logger = logging.getLogger("GAI-Security-News")
+logger = logging.getLogger("AIRT-GAI-SecNews")
 logger.setLevel(logging.DEBUG)
 shandler = logging.StreamHandler(sys.stdout)
 fmt = '\033[1;32m%(levelname)-5s %(module)s:%(funcName)s():'
@@ -40,7 +40,7 @@ urllib3.disable_warnings()
 
 BASE_URL = 'https://export.arxiv.org/api/query'
 BASE_OFFSET = 0
-COMPRESS_PROMPT = True
+COMPRESS_PROMPT = False
 EMAIL_LIST = []
 MAX_RESULTS = 200
 OAI = AzureOpenAI(
@@ -50,6 +50,7 @@ OAI = AzureOpenAI(
 )
 PROCESS_DAYS = 7
 PAPER_PATH = "papers/"
+SUMMARIES_PATH = "summaries/"
 os.makedirs(PAPER_PATH, exist_ok=True)
 SEARCHES = [
     {'search_query': 'all:"prompt%20injection"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
@@ -66,12 +67,16 @@ SEARCHES = [
 ]
 SENDER_EMAIL = ''
 FROM_EMAIL = ''
-SYSTEM_PROMPT = """Assume the role of a technical writer. Present the main findings of the research succinctly. Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.' Focus on outcomes, significant percentages or statistics, and their broader implications. Each point should stand on its own, conveying a clear fact or insight relevant to the field of study.
+SYSTEM_PROMPT = """Assume the role of a technical writer. 
+Present the main findings of the research succinctly. 
+Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.'
+Focus on outcomes, significant percentages or statistics, and their broader implications. 
+Each point should stand on its own, conveying a clear fact or insight relevant to the field of study.
 
 Format the output as a JSON object that follows the following template.
 
-'findings' // array that contains 3 single sentence findings.
-'one_liner' // one-liner sentences noting what it's interesting in the paper"""
+'findings' // array that contains 3 single-sentence findings.
+'one_liner' // one-liner sentences noting what is interesting in the paper"""
 
 
 def offset_existing_time_future(str_time, delta):
@@ -125,7 +130,7 @@ def _request_bulk(urls):
     return results
 
 
-def execute_searches(base, params, results):
+def execute_searches(base, params: list, results: list) -> list:
     """Recursively collect all results from searches."""
     for item in params:
         payload_str = urllib.parse.urlencode(item, safe=':+')
@@ -164,7 +169,7 @@ def process_feed(response):
     return results
 
 
-def assemble_feeds(feeds):
+def assemble_feeds(feeds: list) -> list:
     """Process all the feeds into a deduplicated list."""
     results = list()
     for feed in feeds:
@@ -174,7 +179,7 @@ def assemble_feeds(feeds):
     return deduplicated
 
 
-def prune_feeds(feeds):
+def prune_feeds(feeds: list) -> list:
     """Prune the list of feeds to only those that match our criteria."""
     valid = list()
     for feed in feeds:
@@ -208,7 +213,7 @@ def download_paper(url):
     return True
 
 
-def download_papers(results):
+def download_papers(results: list) -> bool:
     """Download all papers and save them locally."""
     urls = list()
     for result in results:
@@ -224,7 +229,7 @@ def download_papers(results):
     return True
 
 
-def assemble_records():
+def assemble_records() -> list:
     """Gather any records in process window not yet summarized."""
     query = {'$and': [
         {'published': {'$gte': PULL_WINDOW}},
@@ -236,7 +241,7 @@ def assemble_records():
     return list(tmp)
 
 
-def read_pages(reader):
+def read_pages(reader) -> dict:
     """Read all the pages from a loaded PDF."""
     tmp = {'pages': len(reader.pages), 'content': list(), 'characters': 0, 'tokens': 0}
     for i in range(len(reader.pages)):
@@ -268,7 +273,7 @@ def compress_content(metadata):
     return tmp['compressed_prompt']
 
 
-def summarize_records(records):
+def summarize_records(records: list) -> bool:
     """Use LLM to summarize paper content."""
     for record in records:
         logger.debug("Processing: %s" % record['id'])
@@ -309,7 +314,7 @@ def summarize_records(records):
     return True
 
 
-def share_results():
+def share_results() -> bool:
     """Prepare any result not yet shared and format."""
     query = {'$and': [
         {'published': {'$gte': PULL_WINDOW}},
@@ -327,14 +332,14 @@ def share_results():
     for record in tmp:
         content['plain'] += "%s %s - %s - %s\n" % (record['emoji'], record['title'], record['url'], record['one_liner'])
         content['html'] += "<b>%s %s</b> (<a href='%s' target='_blank'>%s</a>) - %s<br>" % (record['emoji'], record['title'], record['url'], record['url'], record['one_liner'])
-        content['markdown'] += '**%s %s** (source)[%s]\\' % (record['emoji'], record['title'], record['url'])
+        content['markdown'] += '%s **%s** [source](%s) \n\n %s' % (record['emoji'], record['title'], record['url'], record['one_liner'])
         for point in record['points']:
             content['plain'] += "- %s\n" % (point)
             content['html'] += "<li>%s</li>" % (point)
-            content['markdown'] += '* %s\\' % (point)
+            content['markdown'] += '\n - %s' % (point)
         content['plain'] += "\n\n"
         content['html'] += "<br>"
-        content['markdown'] += "\\\\"
+        content['markdown'] += "\n\n<br>"
 
     logger.debug(content)
 
@@ -343,6 +348,15 @@ def share_results():
         setter = {'$set': {'shared': True}}
         RESEARCH_DB.update_one(query, setter)
 
+    # Create a markdown file for sharing in SUMMARIES_PATH
+    # The filename should be YYYY-MM-DD.md
+    os.makedirs(SUMMARIES_PATH, exist_ok=True)
+    markdown_file = Path(SUMMARIES_PATH + datetime.datetime.now().strftime('%Y-%m-%d') + '.md')
+    with open(markdown_file, 'w') as f:
+        f.write(content['markdown'])
+    logger.info("Markdown file created: %s" % markdown_file)
+
+
     return True
 
 
@@ -350,9 +364,11 @@ if __name__ == "__main__":
 
     logger.info("[*] Executing searches...")
     feeds = execute_searches(BASE_URL, SEARCHES, list())
+    logger.info("[*] Found %s feeds." % str(len(feeds)))
 
     logger.info("[*] Assembling feeds...")
     results = assemble_feeds(feeds)
+    logger.info("[*] Deduplication - %s results." % str(len(results)))
 
     logger.info("[*] Pruning feeds...")
     valid = prune_feeds(results)
@@ -366,7 +382,7 @@ if __name__ == "__main__":
     logger.info("[*] Summarizing %s papers..." % str(len(records)))
     summarize_records(records)
 
-    logger.info("[*] Sending %s emails..." % str(len(records)))
+    logger.info("[*] Sharing summaries for %s papers..." % str(len(records)))
     share_results()
 
     logger.info("[$] FIN")
