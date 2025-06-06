@@ -1,6 +1,6 @@
 import os
 import sys
-import copy
+import time
 import json
 import dotenv
 import random
@@ -69,11 +69,10 @@ SEARCHES = [
     {'search_query': 'all:"backdoor"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"trojan"+AND+"llm"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"exploit"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
-    {'search_query': 'all:"exploit"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"vulnerability"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"hijack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"attack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
-    {'search_query': 'all:"backdooor"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
+    {'search_query': 'all:"backdoor"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"malware"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"phishing"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"hack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
@@ -148,19 +147,51 @@ def _request_bulk(urls):
 
 
 def execute_searches(base, params: list, results: list) -> list:
+    print(f"Number of searches: {len(params)}")
     """Recursively collect all results from searches."""
     for item in params:
-        payload_str = urllib.parse.urlencode(item, safe=':+')
-        response = requests.get(base, params=payload_str)
-        feed = feedparser.parse(response.content)
-        remains = (int(feed.feed.opensearch_totalresults)
-                   - int(feed.feed.opensearch_startindex))
-        recurse = remains > MAX_RESULTS
-        results.append(response.content)
-        if (int(feed.feed.opensearch_totalresults) > MAX_RESULTS) and recurse:
-            tmp = copy.deepcopy(item)
-            tmp['start'] = item['start'] + MAX_RESULTS
-            return execute_searches(base, [tmp], results)
+        # Collect all pages for this search query
+        current_start = item['start']
+        search_query = item['search_query']
+        max_results_per_request = item['max_results']
+        
+        while True:
+            time.sleep(random.uniform(0.5, 1.5))  # Random delay to avoid hitting rate limits
+            
+            # Create current request parameters
+            current_params = {
+                'search_query': search_query,
+                'start': current_start,
+                'max_results': max_results_per_request
+            }
+            
+            payload_str = urllib.parse.urlencode(current_params, safe=':+')
+            print(f"Executing search with params: {payload_str}")
+
+            response = requests.get(base, params=payload_str)
+            feed = feedparser.parse(response.content)
+            
+            total_results = int(feed.feed.opensearch_totalresults)
+            start_index = int(feed.feed.opensearch_startindex)
+            returned_results = len(feed.entries)
+            
+            print(f"Total results available: {total_results}")
+            print(f"Start index: {start_index}")
+            print(f"Results in this batch: {returned_results}")
+            
+            # Add this batch to results
+            results.append(response.content)
+            
+            # Check if we need to fetch more pages
+            # If we got fewer results than requested, or if we've reached the end
+            if returned_results < max_results_per_request or (start_index + returned_results) >= total_results:
+                print(f"Completed search for: {search_query}")
+                break
+                
+            # Prepare for next page
+            current_start = start_index + returned_results
+            print(f"Fetching next page starting at: {current_start}")
+    
     return results
 
 
@@ -363,7 +394,7 @@ def share_results() -> bool:
     for record in tmp:
         content['plain'] += "%s %s\n %s - %s\n - %s\n" % (record['emoji'], record['title'], record['url'], record['tag'],  record['one_liner'])
         content['html'] += "<b>%s %s</b> (<a href='%s' target='_blank'>%s</a>)<br> %s - %s<br>" % (record['emoji'], record['title'], record['url'], record['url'], record['tag'], record['one_liner'])
-        content['markdown'] += '%s **%s** [source](%s) %s \n\n %s' % (record['emoji'], record['title'], record['url'], record['tag'], record['one_liner'])
+        content['markdown'] += '%s **%s** [source](%s) #%s \n\n %s' % (record['emoji'], record['title'], record['url'], record['tag'], record['one_liner'])
         for point in record['points']:
             content['plain'] += "- %s\n" % (point)
             content['html'] += "<li>%s</li>" % (point)
