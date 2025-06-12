@@ -328,13 +328,21 @@ def summarize_records(records: list) -> bool:
         filename = PAPER_PATH + "%s.pdf" % (record['id'])
         try:
             reader = PdfReader(filename)
+            # This call may fail with a FileNotFoundError if the file does not exist
+            # It may also fail with other exceptions if the PDF is corrupted or unreadable
         except FileNotFoundError:
             download_paper(record['url'])
-            reader = PdfReader(filename)
+            try:
+                reader = PdfReader(filename)
+            except Exception as e:
+                #  Occurs when a paper URL is valid, yet the file is not.
+                logger.error(e)
+                continue
         except Exception as e:
-            #  Occurs when a paper URL is valid, yet the file is not.
-            logger.error(e)
+            # Handle any other exceptions that may occur when reading the PDF
+            logger.error(f"Error reading {filename}: {e}")
             continue
+   
         metadata = read_pages(reader)
         oai_summarize = metadata['content']
         if COMPRESS_PROMPT:
@@ -381,7 +389,7 @@ def share_results() -> bool:
     query = {'$and': [
         {'published': {'$gte': PULL_WINDOW}},
         {'summarized': True},
-        # {'shared': False}
+        {'shared': False}
     ]}
     tmp = RESEARCH_DB.find(query)
     if not tmp:
@@ -428,19 +436,19 @@ def share_results() -> bool:
 
 if __name__ == "__main__":
 
-    logger.info("[*] Executing searches...")
-    feeds = execute_searches(BASE_URL, SEARCHES, list())
-    logger.info("[*] Found %s feeds." % str(len(feeds)))
+    # logger.info("[*] Executing searches...")
+    # feeds = execute_searches(BASE_URL, SEARCHES, list())
+    # logger.info("[*] Found %s feeds." % str(len(feeds)))
 
-    logger.info("[*] Assembling feeds...")
-    results = assemble_feeds(feeds)
-    logger.info("[*] Deduplication - %s results." % str(len(results)))
+    # logger.info("[*] Assembling feeds...")
+    # results = assemble_feeds(feeds)
+    # logger.info("[*] Deduplication - %s results." % str(len(results)))
 
-    logger.info("[*] Pruning feeds...")
-    valid = prune_feeds(results)
+    # logger.info("[*] Pruning feeds...")
+    # valid = prune_feeds(results)
 
-    logger.info("[*] Downloading %s papers..." % str(len(valid)))
-    download_papers(valid)
+    # logger.info("[*] Downloading %s papers..." % str(len(valid)))
+    # download_papers(valid)
 
     logger.info("[*] Assembling records for summary...")
     records = assemble_records()
