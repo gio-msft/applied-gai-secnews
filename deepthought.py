@@ -1,26 +1,22 @@
 import os
 import sys
-import time
 import json
 import dotenv
-import random
-import urllib
 import urllib3
 import logging
-import requests
 import datetime
-import feedparser
 import smtplib
 
 from pathlib import Path
 from pypdf import PdfReader
 from openai import AzureOpenAI
 from pymongo import MongoClient
-from concurrent.futures import wait
 from llmlingua import PromptCompressor
-from requests_futures.sessions import FuturesSession
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+from secnews.utils_search import execute_searches, assemble_feeds, prune_feeds
+from secnews.utils_papers import download_papers, save, download_paper, assemble_records
 
 
 # Load environment variables from .env file
@@ -103,12 +99,6 @@ def offset_existing_time_future(str_time, delta):
     return offset.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def isodate_formatted(iso):
-    """Return a formatted date from an ISO."""
-    tmp = datetime.datetime.fromisoformat(iso[:-1] + '+00:00')
-    return tmp.strftime("%Y-%m-%d %H:%M:%S")
-
-
 def mongo_connect(host, port, database, collection):
     """Connect to local mongo instance."""
     return MongoClient(host, port)[database][collection]
@@ -119,174 +109,6 @@ TODAY = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 PULL_WINDOW = offset_existing_time_future(TODAY, -PROCESS_DAYS)
 
 
-def gen_headers():
-    """Generate a header pairing."""
-    ua_list = ['Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.117 Safari/537.36']
-    headers = {'User-Agent': ua_list[random.randint(0, len(ua_list) - 1)]}
-    return headers
-
-
-def _request_bulk(urls):
-    """Batch the requests going out."""
-    if not urls:
-        return list()
-    session: FuturesSession = FuturesSession()
-    futures = [
-        session.get(u, headers=gen_headers(), timeout=20, verify=False)
-        for u in urls
-    ]
-    done, _ = wait(futures)
-    results = list()
-    for response in done:
-        try:
-            tmp = response.result()
-            results.append(tmp)
-        except Exception as err:
-            logger.error("Failed result: %s" % err)
-    return results
-
-
-def execute_searches(base, params: list, results: list) -> list:
-    print(f"Number of searches: {len(params)}")
-    """Recursively collect all results from searches."""
-    for item in params:
-        # Collect all pages for this search query
-        current_start = item['start']
-        search_query = item['search_query']
-        max_results_per_request = item['max_results']
-        
-        while True:
-            time.sleep(random.uniform(0.5, 1.5))  # Random delay to avoid hitting rate limits
-            
-            # Create current request parameters
-            current_params = {
-                'search_query': search_query,
-                'start': current_start,
-                'max_results': max_results_per_request
-            }
-            
-            payload_str = urllib.parse.urlencode(current_params, safe=':+')
-            print(f"Executing search with params: {payload_str}")
-
-            response = requests.get(base, params=payload_str)
-            feed = feedparser.parse(response.content)
-            
-            total_results = int(feed.feed.opensearch_totalresults)
-            start_index = int(feed.feed.opensearch_startindex)
-            returned_results = len(feed.entries)
-            
-            print(f"Total results available: {total_results}")
-            print(f"Start index: {start_index}")
-            print(f"Results in this batch: {returned_results}")
-            
-            # Add this batch to results
-            results.append(response.content)
-            
-            # Check if we need to fetch more pages
-            # If we got fewer results than requested, or if we've reached the end
-            if returned_results < max_results_per_request or (start_index + returned_results) >= total_results:
-                print(f"Completed search for: {search_query}")
-                break
-                
-            # Prepare for next page
-            current_start = start_index + returned_results
-            print(f"Fetching next page starting at: {current_start}")
-    
-    return results
-
-
-def process_feed(response):
-    """Process feed into list."""
-    results = list()
-    feed = feedparser.parse(response)
-    for entry in feed.entries:
-        url = "%s.pdf" % entry.id.replace('abs', 'pdf')
-        obj = {
-            'id': entry.id.split('/abs/')[-1],
-            'url': url,
-            'published': entry.published,
-            'title': entry.title,
-            'downloaded': False,
-            'summarized': False,
-            'shared': False,
-        }
-        results.append(obj)
-        query = {'url': obj['url']}
-        if RESEARCH_DB.count_documents(query) <= 0:
-            RESEARCH_DB.insert_one(obj)
-    return results
-
-
-def assemble_feeds(feeds: list) -> list:
-    """Process all the feeds into a deduplicated list."""
-    results = list()
-    for feed in feeds:
-        results += process_feed(feed)
-    seen = set()
-    deduplicated = [x for x in results if [(x['url']) not in seen, seen.add((x['url']))][0]]
-    return deduplicated
-
-
-def prune_feeds(feeds: list) -> list:
-    """Prune the list of feeds to only those that match our criteria."""
-    valid = list()
-    for feed in feeds:
-        published = isodate_formatted(feed['published'])
-        if published < PULL_WINDOW:
-            continue
-        filename = Path(PAPER_PATH + feed['id'] + '.pdf')
-        if filename.is_file():
-            continue
-        valid.append(feed)
-    return valid
-
-
-def save(id, content):
-    """Save the file information."""
-    f = open("papers/%s" % id, 'wb')
-    f.write(content)
-    f.close()
-
-
-def download_paper(url):
-    """Download all papers and save them locally."""
-    logger.debug("Downloading: %s" % url)
-    responses = _request_bulk([url])
-    for item in responses:
-        filename = item.url.split('/')[-1] + '.pdf'
-        save(filename, item.content)
-        query = {'id': filename.replace('.pdf', '')}
-        setter = {'$set': {'downloaded': True}}
-        RESEARCH_DB.update_one(query, setter)
-    return True
-
-
-def download_papers(results: list) -> bool:
-    """Download all papers and save them locally."""
-    urls = list()
-    for result in results:
-        urls.append(result['url'])
-    urls = list(set(urls))
-    responses = _request_bulk(urls)
-    for item in responses:
-        filename = item.url.split('/')[-1] + '.pdf'
-        save(filename, item.content)
-        query = {'id': filename.replace('.pdf', '')}
-        setter = {'$set': {'downloaded': True}}
-        RESEARCH_DB.update_one(query, setter)
-    return True
-
-
-def assemble_records() -> list:
-    """Gather any records in process window not yet summarized."""
-    query = {'$and': [
-        {'published': {'$gte': PULL_WINDOW}},
-        {'summarized': False}
-    ]}
-    tmp = RESEARCH_DB.find(query)
-    if not tmp:
-        tmp = list()
-    return list(tmp)
 
 
 def read_pages(reader) -> dict:
@@ -331,7 +153,7 @@ def summarize_records(records: list) -> bool:
             # This call may fail with a FileNotFoundError if the file does not exist
             # It may also fail with other exceptions if the PDF is corrupted or unreadable
         except FileNotFoundError:
-            download_paper(record['url'])
+            download_paper(record['url'], RESEARCH_DB)
             try:
                 reader = PdfReader(filename)
             except Exception as e:
@@ -436,27 +258,28 @@ def share_results() -> bool:
 
 if __name__ == "__main__":
 
-    # logger.info("[*] Executing searches...")
-    # feeds = execute_searches(BASE_URL, SEARCHES, list())
-    # logger.info("[*] Found %s feeds." % str(len(feeds)))
+    logger.info("[*] Executing searches...")
+    feeds = execute_searches(BASE_URL, SEARCHES, list())
+    logger.info("[*] Found %s feeds." % str(len(feeds)))
 
-    # logger.info("[*] Assembling feeds...")
-    # results = assemble_feeds(feeds)
-    # logger.info("[*] Deduplication - %s results." % str(len(results)))
+    logger.info("[*] Assembling feeds...")
+    results = assemble_feeds(feeds, RESEARCH_DB)
+    logger.info("[*] Deduplication - %s results." % str(len(results)))
 
-    # logger.info("[*] Pruning feeds...")
-    # valid = prune_feeds(results)
+    logger.info("[*] Pruning feeds...")
+    valid = prune_feeds(results, PULL_WINDOW, PAPER_PATH)
 
-    # logger.info("[*] Downloading %s papers..." % str(len(valid)))
-    # download_papers(valid)
+    logger.info("[*] Downloading %s papers..." % str(len(valid)))
+    download_papers(valid, RESEARCH_DB)
 
     logger.info("[*] Assembling records for summary...")
-    records = assemble_records()
+    records = assemble_records(PULL_WINDOW, RESEARCH_DB)
+    logger.info("[*] Found %s records to summarize." % str(len(records)))
 
-    logger.info("[*] Summarizing %s papers..." % str(len(records)))
-    summarize_records(records)
+    # logger.info("[*] Summarizing %s papers..." % str(len(records)))
+    # summarize_records(records)
 
-    logger.info("[*] Sharing summaries for %s papers..." % str(len(records)))
-    share_results()
+    # logger.info("[*] Sharing summaries for %s papers..." % str(len(records)))
+    # share_results()
 
-    logger.info("[$] FIN")
+    # logger.info("[$] FIN")
