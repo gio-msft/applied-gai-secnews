@@ -1,22 +1,18 @@
 import os
 import sys
-import json
 import dotenv
 import urllib3
 import logging
 import datetime
-import smtplib
 
-from pathlib import Path
-from pypdf import PdfReader
 from openai import AzureOpenAI
 from pymongo import MongoClient
 from llmlingua import PromptCompressor
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
+from secnews.utils_comms import share_results
+from secnews.utils_summary import summarize_records
+from secnews.utils_papers import download_papers, assemble_records
 from secnews.utils_search import execute_searches, assemble_feeds, prune_feeds
-from secnews.utils_papers import download_papers, save, download_paper, assemble_records
 
 
 # Load environment variables from .env file
@@ -74,9 +70,7 @@ SEARCHES = [
     {'search_query': 'all:"hack"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
     {'search_query': 'all:"trojan"+AND+"agent"+AND+cat:cs.*', 'start': BASE_OFFSET, 'max_results': MAX_RESULTS},
 ]
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
-FROM_EMAIL = os.environ.get("FROM_EMAIL")
-APP_PASSWORD = os.environ.get("APP_PASSWORD")
+
 SYSTEM_PROMPT = """Assume the role of a technical writer. 
 Present the main findings of the research succinctly. 
 Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.'
@@ -109,153 +103,6 @@ TODAY = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 PULL_WINDOW = offset_existing_time_future(TODAY, -PROCESS_DAYS)
 
 
-
-
-def read_pages(reader) -> dict:
-    """Read all the pages from a loaded PDF."""
-    tmp = {'pages': len(reader.pages), 'content': list(), 'characters': 0, 'tokens': 0}
-    for i in range(len(reader.pages)):
-        page = reader.pages[i]
-        tmp['content'].append(page.extract_text())
-    tmp['content'] = ' '.join(tmp['content'])
-    tmp['characters'] = int(len(tmp['content']))
-    tmp['tokens'] = int(round(len(tmp['content'])/4))
-    return tmp
-
-
-def compress_content(metadata):
-    """Compress content using LLMLingua."""
-    tmp = llm_lingua.compress_prompt(
-        metadata['content'],
-        instruction=SYSTEM_PROMPT,
-        rate=0.33,
-        force_tokens=['\n', '?'],
-        condition_in_question="after_condition",
-        reorder_context="sort",
-        dynamic_context_compression_ratio=0.3, # or 0.4
-        condition_compare=True,
-        context_budget="+100",
-        rank_method="longllmlingua",
-    )
-    logger.debug("Compressed %s to %s (%s)" % (tmp['origin_tokens'],
-                                               tmp['compressed_tokens'],
-                                               tmp['rate']))
-    return tmp['compressed_prompt']
-
-
-def summarize_records(records: list) -> bool:
-    """Use LLM to summarize paper content."""
-    for record in records:
-        logger.debug("Processing: %s" % record['id'])
-        filename = PAPER_PATH + "%s.pdf" % (record['id'])
-        try:
-            reader = PdfReader(filename)
-            # This call may fail with a FileNotFoundError if the file does not exist
-            # It may also fail with other exceptions if the PDF is corrupted or unreadable
-        except FileNotFoundError:
-            download_paper(record['url'], RESEARCH_DB)
-            try:
-                reader = PdfReader(filename)
-            except Exception as e:
-                #  Occurs when a paper URL is valid, yet the file is not.
-                logger.error(e)
-                continue
-        except Exception as e:
-            # Handle any other exceptions that may occur when reading the PDF
-            logger.error(f"Error reading {filename}: {e}")
-            continue
-   
-        metadata = read_pages(reader)
-        oai_summarize = metadata['content']
-        if COMPRESS_PROMPT:
-            oai_summarize = compress_content(metadata)
-        results = OAI.chat.completions.create(
-            model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": oai_summarize},
-            ],
-            response_format={"type": "json_object"}
-        )
-        loaded = json.loads(results.choices[0].message.content)
-        logger.debug("Processed: %s" % record['id'])
-        logger.debug(loaded)
-        query = {'id': record['id']}
-        update = {
-            'summarized': True,
-            'points': loaded['findings'],
-            'one_liner': loaded['one_liner'],
-            'emoji': loaded['emoji'] if 'emoji' in loaded else '🔍',
-            'tag': loaded['tag'] if 'tag' in loaded else 'general'
-        }
-        setter = {'$set': update}
-        RESEARCH_DB.update_one(query, setter)
-    return True
-
-def send_mail(subject, content, send_to):
-    """Send mail out to users."""
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(SENDER_EMAIL, APP_PASSWORD)
-    message = MIMEMultipart('alternative')
-    message['subject'] = subject
-    message['From'] = FROM_EMAIL
-    message['To'] = send_to
-    message.attach(MIMEText(content['plain'], 'plain'))
-    message.attach(MIMEText(content['html'], 'html'))
-    server.sendmail(message['From'], message['To'], message.as_string())
-    server.quit()
-
-def share_results() -> bool:
-    """Prepare any result not yet shared and format."""
-    query = {'$and': [
-        {'published': {'$gte': PULL_WINDOW}},
-        {'summarized': True},
-        {'shared': False}
-    ]}
-    tmp = RESEARCH_DB.find(query)
-    if not tmp:
-        return False
-    tmp = list(tmp)
-    for record in tmp:
-        logger.debug("%s %s" % (record['published'], record['title']))
-
-    content = {'plain': '', 'html': '', 'markdown': ''}
-    for record in tmp:
-        content['plain'] += "%s %s\n %s - %s\n - %s\n" % (record['emoji'], record['title'], record['url'], record['tag'],  record['one_liner'])
-        content['html'] += "<b>%s %s</b> (<a href='%s' target='_blank'>%s</a>)<br> %s - %s<br>" % (record['emoji'], record['title'], record['url'], record['url'], record['tag'], record['one_liner'])
-        content['markdown'] += '%s **%s** [source](%s) #%s \n\n %s' % (record['emoji'], record['title'], record['url'], record['tag'], record['one_liner'])
-        for point in record['points']:
-            content['plain'] += "- %s\n" % (point)
-            content['html'] += "<li>%s</li>" % (point)
-            content['markdown'] += '\n - %s' % (point)
-        content['plain'] += "\n\n"
-        content['html'] += "<br>"
-        content['markdown'] += "\n\n<br>\n\n"
-
-    logger.debug(content)
-    if len(content['plain']) > 0:
-        for user in EMAIL_LIST:
-            subject = "[%s] AIRT Gen AI Security News" % (TODAY[:10])
-            send_mail(subject, content, user)
-
-    for record in tmp:
-        query = {'id': record['id']}
-        setter = {'$set': {'shared': True}}
-        RESEARCH_DB.update_one(query, setter)
-
-    # Create a markdown file for sharing in SUMMARIES_PATH
-    # The filename should be YYYY-MM-DD.md
-    os.makedirs(SUMMARIES_PATH, exist_ok=True)
-    markdown_file = Path(SUMMARIES_PATH + datetime.datetime.now().strftime('%Y-%m-%d') + '.md')
-    with open(markdown_file, 'w') as f:
-        f.write(content['markdown'])
-    logger.info("Markdown file created: %s" % markdown_file)
-
-
-    return True
-
-
 if __name__ == "__main__":
 
     logger.info("[*] Executing searches...")
@@ -276,10 +123,10 @@ if __name__ == "__main__":
     records = assemble_records(PULL_WINDOW, RESEARCH_DB)
     logger.info("[*] Found %s records to summarize." % str(len(records)))
 
-    # logger.info("[*] Summarizing %s papers..." % str(len(records)))
-    # summarize_records(records)
+    logger.info("[*] Summarizing %s papers..." % str(len(records)))
+    summarize_records(records)
 
-    # logger.info("[*] Sharing summaries for %s papers..." % str(len(records)))
-    # share_results()
+    logger.info("[*] Sharing summaries for %s papers..." % str(len(records)))
+    share_results()
 
-    # logger.info("[$] FIN")
+    logger.info("[$] FIN")

@@ -72,14 +72,22 @@ def download_paper(url, research_db: MongoClient) -> bool:
     return True
 
 
-
 def assemble_records(pull_window: str, research_db: MongoClient) -> list:
     """Gather any records in process window not yet summarized."""
-    query = {'$and': [
-        {'published': {'$gte': pull_window}},
-        {'summarized': False}
-    ]}
+    query = {"$and": [{"published": {"$gte": pull_window}}, {"summarized": False}]}
     tmp = research_db.find(query)
     if not tmp:
         tmp = list()
     return list(tmp)
+
+
+def read_pages(reader) -> dict:
+    """Read all the pages from a loaded PDF."""
+    tmp = {"pages": len(reader.pages), "content": list(), "characters": 0, "tokens": 0}
+    for i in range(len(reader.pages)):
+        page = reader.pages[i]
+        tmp["content"].append(page.extract_text())
+    tmp["content"] = " ".join(tmp["content"])
+    tmp["characters"] = int(len(tmp["content"]))
+    tmp["tokens"] = int(round(len(tmp["content"]) / 4))
+    return tmp
