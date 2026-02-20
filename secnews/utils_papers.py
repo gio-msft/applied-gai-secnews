@@ -1,93 +1,84 @@
-import random
+import os
 import logging
 
-from pymongo import MongoClient
 from concurrent.futures import wait
 from requests_futures.sessions import FuturesSession
 
 logger = logging.getLogger("AIRT-GAI-SecNews")
 
-
-def gen_headers():
-    """Generate a header pairing."""
-    ua_list = [
-        "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.117 Safari/537.36"
-    ]
-    headers = {"User-Agent": ua_list[random.randint(0, len(ua_list) - 1)]}
-    return headers
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.117 Safari/537.36"
 
 
 def _request_bulk(urls):
     """Batch the requests going out."""
     if not urls:
-        return list()
-    session: FuturesSession = FuturesSession()
+        return []
+    session = FuturesSession()
     futures = [
-        session.get(u, headers=gen_headers(), timeout=20, verify=False) for u in urls
+        session.get(u, headers={"User-Agent": USER_AGENT}, timeout=20) for u in urls
     ]
     done, _ = wait(futures)
-    results = list()
+    results = []
     for response in done:
         try:
-            tmp = response.result()
-            results.append(tmp)
+            results.append(response.result())
         except Exception as err:
             logger.error("Failed result: %s" % err)
     return results
 
 
-def save(id, content):
-    """Save the file information."""
-    f = open("papers/%s" % id, "wb")
-    f.write(content)
-    f.close()
+def _filename_from_url(url):
+    """Extract filename from a URL, ensuring a single .pdf extension."""
+    name = url.split("/")[-1]
+    if not name.endswith(".pdf"):
+        name += ".pdf"
+    return name
 
 
-def download_papers(results: list, research_db: MongoClient) -> bool:
+def _save(paper_path, filename, content):
+    """Save binary content to paper_path/filename."""
+    filepath = os.path.join(paper_path, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+
+def download_papers(results: list, paper_db, paper_path: str) -> bool:
     """Download all papers and save them locally."""
-    urls = list()
-    for result in results:
-        urls.append(result["url"])
-    urls = list(set(urls))
+    urls = list({r["url"] for r in results})
     responses = _request_bulk(urls)
     for item in responses:
-        filename = item.url.split("/")[-1] + ".pdf"
-        save(filename, item.content)
-        query = {"id": filename.replace(".pdf", "")}
-        setter = {"$set": {"downloaded": True}}
-        research_db.update_one(query, setter)
+        filename = _filename_from_url(item.url)
+        _save(paper_path, filename, item.content)
+        paper_id = filename.replace(".pdf", "")
+        paper_db.update(paper_id, {"downloaded": True})
     return True
 
 
-def download_paper(url, research_db: MongoClient) -> bool:
-    """Download all papers and save them locally."""
+def download_paper(url, paper_db, paper_path: str) -> bool:
+    """Download a single paper and save it locally."""
     logger.debug("Downloading: %s" % url)
     responses = _request_bulk([url])
     for item in responses:
-        filename = item.url.split("/")[-1] + ".pdf"
-        save(filename, item.content)
-        query = {"id": filename.replace(".pdf", "")}
-        setter = {"$set": {"downloaded": True}}
-        research_db.update_one(query, setter)
+        filename = _filename_from_url(item.url)
+        _save(paper_path, filename, item.content)
+        paper_id = filename.replace(".pdf", "")
+        paper_db.update(paper_id, {"downloaded": True})
     return True
 
 
-def assemble_records(pull_window: str, research_db: MongoClient) -> list:
+def assemble_records(pull_window: str, paper_db) -> list:
     """Gather any records in process window not yet summarized."""
-    query = {"$and": [{"published": {"$gte": pull_window}}, {"summarized": False}]}
-    tmp = research_db.find(query)
-    if not tmp:
-        tmp = list()
-    return list(tmp)
+    return paper_db.find(published_gte=pull_window, summarized=False)
 
 
 def read_pages(reader) -> dict:
     """Read all the pages from a loaded PDF."""
-    tmp = {"pages": len(reader.pages), "content": list(), "characters": 0, "tokens": 0}
-    for i in range(len(reader.pages)):
-        page = reader.pages[i]
-        tmp["content"].append(page.extract_text())
-    tmp["content"] = " ".join(tmp["content"])
-    tmp["characters"] = int(len(tmp["content"]))
-    tmp["tokens"] = int(round(len(tmp["content"]) / 4))
-    return tmp
+    pages = []
+    for page in reader.pages:
+        pages.append(page.extract_text())
+    content = " ".join(pages)
+    return {
+        "pages": len(reader.pages),
+        "content": content,
+        "characters": len(content),
+    }
