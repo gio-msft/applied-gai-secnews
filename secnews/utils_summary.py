@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import logging
 
 from pypdf import PdfReader
@@ -42,6 +43,7 @@ def summarize_records(
 ) -> bool:
     """Use LLM to summarize paper content."""
     for record in records:
+        time.sleep(3)  # To avoid rate limiting
         logger.debug("Processing: %s" % record["id"])
         filename = paper_path + "%s.pdf" % (record["id"])
         try:
@@ -63,27 +65,31 @@ def summarize_records(
 
         metadata = read_pages(reader)
         oai_summarize = metadata["content"]
-        if compress_prompt:
-            oai_summarize = compress_content(metadata, llm_lingua, summarizer_prompt)
-        results = summarizer.chat.completions.create(
-            model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
-            messages=[
-                {"role": "system", "content": summarizer_prompt},
-                {"role": "user", "content": oai_summarize},
-            ],
-            response_format={"type": "json_object"},
-        )
-        loaded = json.loads(results.choices[0].message.content)
-        logger.debug("Processed: %s" % record["id"])
-        logger.debug(loaded)
-        query = {"id": record["id"]}
-        update = {
-            "summarized": True,
-            "points": loaded["findings"],
-            "one_liner": loaded["one_liner"],
-            "emoji": loaded["emoji"] if "emoji" in loaded else "🔍",
-            "tag": loaded["tag"] if "tag" in loaded else "general",
-        }
-        setter = {"$set": update}
-        research_db.update_one(query, setter)
+        try:
+            if compress_prompt:
+                oai_summarize = compress_content(metadata, llm_lingua, summarizer_prompt)
+            results = summarizer.chat.completions.create(
+                model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
+                messages=[
+                    {"role": "system", "content": summarizer_prompt},
+                    {"role": "user", "content": oai_summarize},
+                ],
+                response_format={"type": "json_object"},
+            )
+            loaded = json.loads(results.choices[0].message.content)
+            logger.debug("Processed: %s" % record["id"])
+            logger.debug(loaded)
+            query = {"id": record["id"]}
+            update = {
+                "summarized": True,
+                "points": loaded["findings"],
+                "one_liner": loaded["one_liner"],
+                "emoji": loaded["emoji"] if "emoji" in loaded else "🔍",
+                "tag": loaded["tag"] if "tag" in loaded else "general",
+            }
+            setter = {"$set": update}
+            research_db.update_one(query, setter)
+        except Exception as e:
+            logger.error(f"Error summarizing {record['id']}: {e}")
+            continue
     return True
