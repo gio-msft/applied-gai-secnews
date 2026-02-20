@@ -189,3 +189,5 @@ cython_debug/
 
 .env
 papers/
+
+summaries/*.eml:OECustomProperty
