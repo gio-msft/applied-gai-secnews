@@ -191,3 +191,4 @@ cython_debug/
 papers/
 
 summaries/*.eml:OECustomProperty
+projects.json

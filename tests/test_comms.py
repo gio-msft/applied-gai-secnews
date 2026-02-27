@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from secnews.utils_comms import _format_record_markdown, share_results
+from secnews.utils_comms import (
+    _format_authors,
+    _format_record_html,
+    _format_record_markdown,
+    share_results,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +60,157 @@ class TestFormatRecordMarkdown:
     def test_emoji_present(self, sample_summarized_record):
         md = _format_record_markdown(sample_summarized_record)
         assert md.startswith(sample_summarized_record["emoji"])
+
+    def test_many_authors_truncated_markdown(self):
+        """More than 3 authors should show first 3 + 'et al.' in markdown."""
+        record = {
+            "emoji": "📄",
+            "title": "Many Authors Paper",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "authors": ["Alice", "Bob", "Carol", "Dave", "Eve"],
+            "affiliations": ["MIT"],
+        }
+        md = _format_record_markdown(record)
+        assert "Alice, Bob, Carol et al." in md
+        assert "Dave" not in md
+        assert "Eve" not in md
+        assert "(MIT)" in md
+
+    def test_many_authors_truncated_html(self):
+        """More than 3 authors should show first 3 + 'et al.' in HTML."""
+        record = {
+            "emoji": "📄",
+            "title": "Many Authors Paper",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "authors": ["Alice", "Bob", "Carol", "Dave", "Eve"],
+            "affiliations": ["MIT"],
+        }
+        html = _format_record_html(record)
+        assert "Alice, Bob, Carol et al." in html
+        assert "Dave" not in html
+        assert "Eve" not in html
+        assert "(MIT)" in html
+
+    def test_three_or_fewer_authors_not_truncated(self):
+        """Exactly 3 authors should all appear without 'et al.'."""
+        record = {
+            "emoji": "📄",
+            "title": "Three Authors",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "authors": ["Alice", "Bob", "Carol"],
+            "affiliations": ["MIT"],
+        }
+        md = _format_record_markdown(record)
+        assert "Alice, Bob, Carol" in md
+        assert "et al." not in md
+
+    def test_projects_shown_when_present(self):
+        """Papers with matched projects show a project line at the bottom."""
+        record = {
+            "emoji": "📄",
+            "title": "Paper With Projects",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "projects": ["proj-alpha", "proj-beta"],
+        }
+        md = _format_record_markdown(record)
+        assert "📌" in md
+        assert "proj-alpha" in md
+        assert "proj-beta" in md
+        # Project line should come after findings but before separator
+        proj_pos = md.index("proj-alpha")
+        point_pos = md.index(" - A")
+        br_pos = md.index("<br>")
+        assert point_pos < proj_pos < br_pos
+
+    def test_no_projects_line_when_empty(self):
+        """Papers with no matched projects don't show the project line."""
+        record = {
+            "emoji": "📄",
+            "title": "Paper Without Projects",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "projects": [],
+        }
+        md = _format_record_markdown(record)
+        assert "📌" not in md
+        assert "Projects:" not in md
+
+    def test_no_projects_key_no_line(self):
+        """Papers without the projects key at all don't show the project line."""
+        record = {
+            "emoji": "📄",
+            "title": "Legacy Paper",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+        }
+        md = _format_record_markdown(record)
+        assert "📌" not in md
+
+    def test_projects_in_html(self):
+        """Matched projects appear in HTML output too."""
+        record = {
+            "emoji": "📄",
+            "title": "HTML Projects Paper",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "projects": ["proj-gamma"],
+        }
+        html = _format_record_html(record)
+        assert "proj-gamma" in html
+        assert "📌" in html
+
+    def test_no_projects_in_html_when_empty(self):
+        """No project line in HTML when projects list is empty."""
+        record = {
+            "emoji": "📄",
+            "title": "HTML No Projects",
+            "url": "http://arxiv.org/pdf/test.pdf",
+            "tag": "security",
+            "one_liner": "Summary.",
+            "points": ["A"],
+            "projects": [],
+        }
+        html = _format_record_html(record)
+        assert "Projects:" not in html
+
+
+class TestFormatAuthors:
+
+    def test_empty_list(self):
+        assert _format_authors([]) == ""
+
+    def test_single_author(self):
+        assert _format_authors(["Alice"]) == "Alice"
+
+    def test_two_authors(self):
+        assert _format_authors(["Alice", "Bob"]) == "Alice, Bob"
+
+    def test_three_authors(self):
+        assert _format_authors(["A", "B", "C"]) == "A, B, C"
+
+    def test_four_authors_truncated(self):
+        assert _format_authors(["A", "B", "C", "D"]) == "A, B, C et al."
+
+    def test_many_authors_truncated(self):
+        assert _format_authors(["A", "B", "C", "D", "E", "F"]) == "A, B, C et al."
 
 
 # ---------------------------------------------------------------------------

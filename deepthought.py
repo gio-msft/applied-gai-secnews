@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import dotenv
 import logging
 import datetime
@@ -9,7 +10,7 @@ from openai import AzureOpenAI
 
 from secnews.utils_db import PaperDB
 from secnews.utils_comms import share_results
-from secnews.utils_summary import summarize_records, classify_relevance
+from secnews.utils_summary import summarize_records, classify_relevance, classify_project_relevance
 from secnews.utils_papers import download_papers, assemble_records
 from secnews.utils_search import execute_searches, assemble_feeds, prune_feeds
 
@@ -76,7 +77,7 @@ SEARCHES = [
     for search in SEARCHES
 ]
 
-SYSTEM_PROMPT = """Assume the role of a technical writer. 
+SYSTEM_PROMPT = """Assume the role of an expert AI Security and Safety researcher and technical writer. 
 Present the main findings of the research succinctly. 
 Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.'
 Focus on outcomes, significant percentages or statistics, and their broader implications. 
@@ -109,6 +110,25 @@ NOT RELEVANT:
 
 Respond with a JSON object: {"relevant": true} or {"relevant": false}"""
 
+PROJECT_RELEVANCE_PROMPT = """You are a research project matcher.
+
+Given a paper's title and summary, determine if it is relevant to any of the following research projects.
+A paper is relevant to a project if its topic, methods, or findings could directly inform or advance that project.
+
+Projects:
+{projects}
+
+Respond with a JSON object: {{"projects": ["project-id-1", "project-id-2"]}} containing the IDs of matching projects.
+If the paper is not relevant to any project, respond with: {{"projects": []}}"""
+
+# Load research project definitions for project-relevance classification
+PROJECTS_PATH = "projects.json"
+try:
+    with open(PROJECTS_PATH) as _f:
+        PROJECTS = json.load(_f)
+except (FileNotFoundError, json.JSONDecodeError):
+    PROJECTS = []
+
 
 def make_pull_window(process_days):
     """Return pull_window as an ISO 8601 string."""
@@ -139,6 +159,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--share-only", action="store_true",
         help="Skip all processing, just regenerate output files from existing data",
+    )
+    parser.add_argument(
+        "--reclassify-projects", action="store_true",
+        help="Re-run project classification on relevant papers in the window",
     )
     args = parser.parse_args()
 
@@ -215,6 +239,40 @@ if __name__ == "__main__":
                                 logger.info("Included: %s" % borderline[idx]["title"])
                 except (EOFError, KeyboardInterrupt):
                     pass  # non-interactive environment, skip
+
+        # Project relevance classification
+        if PROJECTS:
+            if args.reclassify_projects:
+                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                    if "projects" in r:
+                        paper_db.update(r["id"], {"projects": None})
+                        # Remove the key by re-reading (update merges, so set None
+                        # then pop). Simpler: just delete from the record dict.
+                # Re-fetch after clearing
+                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                    r.pop("projects", None)
+                paper_db._save()
+                logger.info("[*] Cleared project classifications for re-run.")
+
+            relevant_papers = [
+                r for r in paper_db.find(published_gte=pull_window, summarized=True)
+                if r.get("relevant") is True
+            ]
+            project_list_str = "\n".join(
+                f"- {p['id']}: {p['description']}" for p in PROJECTS
+            )
+            project_prompt = PROJECT_RELEVANCE_PROMPT.format(projects=project_list_str)
+            project_ids = [p["id"] for p in PROJECTS]
+            logger.info("[*] Classifying project relevance for %d papers..." % len(relevant_papers))
+            classify_project_relevance(
+                records=relevant_papers,
+                classifier=OAI,
+                prompt=project_prompt,
+                project_ids=project_ids,
+                paper_db=paper_db,
+            )
+        else:
+            logger.info("[*] No projects defined, skipping project classification.")
 
     logger.info("[*] Sharing summaries...")
     share_results(

@@ -7,6 +7,15 @@ from email.mime.text import MIMEText
 logger = logging.getLogger("AIRT-GAI-SecNews")
 
 
+def _format_authors(authors: list, max_authors: int = 3) -> str:
+    """Format author list, truncating to first *max_authors* with 'et al.' if needed."""
+    if not authors:
+        return ""
+    if len(authors) <= max_authors:
+        return ", ".join(authors)
+    return ", ".join(authors[:max_authors]) + " et al."
+
+
 def _format_record_markdown(record: dict) -> str:
     """Format a single record for markdown."""
     content = (
@@ -18,14 +27,28 @@ def _format_record_markdown(record: dict) -> str:
     if authors or affiliations:
         parts = []
         if authors:
-            parts.append(", ".join(authors))
+            parts.append(_format_authors(authors))
         if affiliations:
             parts.append("(" + ", ".join(affiliations) + ")")
         content += f"\n *{' '.join(parts)}*"
     content += f"\n\n {record['one_liner']}"
     for point in record["points"]:
         content += f"\n - {point}"
+    projects = record.get("projects", [])
+    if projects:
+        content += f"\n\n \U0001f4cc *Relevant to: {', '.join(projects)}*"
     return content + "\n\n<br>\n\n"
+
+
+def _format_projects_html(record: dict) -> str:
+    """Return an HTML snippet for matched projects, or empty string if none."""
+    projects = record.get("projects", [])
+    if not projects:
+        return ""
+    return (
+        f'<p style="margin:6px 0 0 0;color:#555;font-size:0.85em;">'
+        f'\U0001f4cc Relevant to: {', '.join(projects)}</p>'
+    )
 
 
 def _format_record_html(record: dict) -> str:
@@ -39,7 +62,7 @@ def _format_record_html(record: dict) -> str:
     if authors or affiliations:
         parts = []
         if authors:
-            parts.append(", ".join(authors))
+            parts.append(_format_authors(authors))
         if affiliations:
             parts.append("(" + ", ".join(affiliations) + ")")
         byline = (
@@ -57,6 +80,7 @@ def _format_record_html(record: dict) -> str:
         f'{byline}'
         f'<p style="margin:0 0 6px 0;color:#333;">{record["one_liner"]}</p>'
         f'<ul style="margin:0 0 0 18px;padding:0;color:#444;">{points_html}</ul>'
+        f'{_format_projects_html(record)}'
         f'<hr style="border:none;border-top:1px solid #e0e0e0;margin-top:16px;"/>'
         f'</div>'
     )
