@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import dotenv
 import logging
 import datetime
@@ -9,7 +10,7 @@ from openai import AzureOpenAI
 
 from secnews.utils_db import PaperDB
 from secnews.utils_comms import share_results
-from secnews.utils_summary import summarize_records, classify_relevance
+from secnews.utils_summary import summarize_records, classify_relevance, classify_project_relevance
 from secnews.utils_papers import download_papers, assemble_records
 from secnews.utils_search import execute_searches, assemble_feeds, prune_feeds
 
@@ -76,7 +77,7 @@ SEARCHES = [
     for search in SEARCHES
 ]
 
-SYSTEM_PROMPT = """Assume the role of a technical writer. 
+SYSTEM_PROMPT = """Assume the role of an expert AI Security and Safety researcher and technical writer. 
 Present the main findings of the research succinctly. 
 Summarize key findings by highlighting the most critical facts and actionable insights without directly referencing 'the research.'
 Focus on outcomes, significant percentages or statistics, and their broader implications. 
@@ -92,7 +93,43 @@ Format the output as a JSON object that follows the following template.
   - 'cyber': the paper uses AI/LLMs as a TOOL to perform cybersecurity tasks (e.g. AI-powered penetration testing, LLM-based vulnerability detection, AI for malware analysis, AI for incident response).
   - 'general': EVERYTHING ELSE. This includes papers about traditional security topics (network security, cryptographic protocols, formal verification, smart contracts, wireless security, zero-knowledge proofs) even if they mention or use AI. Also includes general ML/AI papers that are not about security/safety/privacy of AI systems.
   When in doubt between 'security' and 'general', ask: 'Is this paper primarily about a threat to, defense of, or privacy property of an AI/LLM/agent system?' If no, use 'general'.
-'affiliations' // array of unique institutional affiliations of the authors, extracted from the paper text (e.g. ["MIT", "Google DeepMind", "Stanford University"]). If not found, return an empty array."""
+'affiliations' // array of unique institutional affiliations of the authors, extracted from the paper text (e.g. ["MIT", "Google DeepMind", "Stanford University"]). If not found, return an empty array.
+'interest_score' // integer from 1 to 10 rating how interesting and noteworthy this paper is.
+  CRITICAL CALIBRATION RULE: Use the FULL 1-10 range. In a typical batch of papers, expect roughly:
+  - ~10-15% scored 1-3 (low quality or irrelevant)
+  - ~30-40% scored 4-5 (mediocre, incremental)
+  - ~25-30% scored 6-7 (competent, some novelty)
+  - ~15-20% scored 8-9 (strong, clearly impactful)
+  - ~1-5% scored 10 (exceptional, field-changing)
+  Most papers are average (3-7). Outstanding work deserves 8+. Be harsh and discriminating.
+  A score of 7 should feel generous, not default. If you find yourself wanting to give 7 or 8 to everything, force yourself to differentiate more aggressively.
+  Quality signals (higher = better):
+  - Relevance to a concrete threat/impact model
+  - Claim clarity & falsifiability
+  - Assumptions are explicit and bounded
+  - Strong baselines & comparisons
+  - Evaluation breadth (coverage)
+  - Evaluation depth (rigor)
+  - Mechanistic insight
+  - Reproducibility & artifacts
+  - External validity / deployment realism
+  Interest signals (higher = better):
+  - Novel attack or defense technique
+  - Practical / real-world impact
+  - Controversial or provocative findings
+  Red flags (lower score):
+  - Toy evaluation only (1-2 models, no baselines)
+  - Incremental tweak on known technique
+  - Claims not supported by evidence
+  - Narrow scope with limited generalizability
+  Scoring anchors:
+  - 10: Landmark — likely to reshape the field or trigger immediate industry response
+  - 8-9: Excellent — rigorous methodology, significant real-world impact, clearly novel contribution
+  - 6-7: Good — solid work with some novelty or practical value, but not exceptional
+  - 4-5: Average — competent but incremental, limited novelty, or narrow scope
+  - 2-3: Below average — weak evaluation, marginal contribution, or questionable methodology
+  - 1: Poor — fundamentally flawed, trivial, or not relevant
+  When in doubt between two scores, choose the LOWER one."""
 
 RELEVANCE_PROMPT = """You are a topic classifier for a newsletter about Generative AI security research.
 
@@ -108,6 +145,31 @@ NOT RELEVANT:
 - General ML/AI papers not about security/safety/privacy of AI systems
 
 Respond with a JSON object: {"relevant": true} or {"relevant": false}"""
+
+PROJECT_RELEVANCE_PROMPT = """You are an extremely strict research project matcher. Your job is to find only STRONG, DIRECT matches.
+
+Given a paper's title and summary, determine if it is relevant to any of the following research projects.
+
+MATCHING RULES — be very conservative:
+- A paper matches a project ONLY if the paper's PRIMARY contribution directly addresses the project's CORE research question or methodology.
+- Superficial keyword overlap is NOT enough. The paper must make a concrete, specific contribution to the project's goals.
+- Sharing a broad topic area (e.g., both being about "LLM security") is NOT a match. The paper must address the specific sub-problem the project focuses on.
+- When in doubt, do NOT match. It is far better to miss a marginal match than to include a false positive.
+- Most papers will NOT match any project. Expect to return an empty list for the majority of papers.
+
+Projects:
+{projects}
+
+Respond with a JSON object: {{"projects": ["project-id-1", "project-id-2"]}} containing the IDs of matching projects.
+If the paper is not relevant to any project (the MOST COMMON case), respond with: {{"projects": []}}"""
+
+# Load research project definitions for project-relevance classification
+PROJECTS_PATH = "projects.json"
+try:
+    with open(PROJECTS_PATH) as _f:
+        PROJECTS = json.load(_f)
+except (FileNotFoundError, json.JSONDecodeError):
+    PROJECTS = []
 
 
 def make_pull_window(process_days):
@@ -139,6 +201,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--share-only", action="store_true",
         help="Skip all processing, just regenerate output files from existing data",
+    )
+    parser.add_argument(
+        "--reclassify-projects", action="store_true",
+        help="Re-run project classification on relevant papers in the window",
     )
     args = parser.parse_args()
 
@@ -215,6 +281,40 @@ if __name__ == "__main__":
                                 logger.info("Included: %s" % borderline[idx]["title"])
                 except (EOFError, KeyboardInterrupt):
                     pass  # non-interactive environment, skip
+
+        # Project relevance classification
+        if PROJECTS:
+            if args.reclassify_projects:
+                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                    if "projects" in r:
+                        paper_db.update(r["id"], {"projects": None})
+                        # Remove the key by re-reading (update merges, so set None
+                        # then pop). Simpler: just delete from the record dict.
+                # Re-fetch after clearing
+                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                    r.pop("projects", None)
+                paper_db._save()
+                logger.info("[*] Cleared project classifications for re-run.")
+
+            relevant_papers = [
+                r for r in paper_db.find(published_gte=pull_window, summarized=True)
+                if r.get("relevant") is True
+            ]
+            project_list_str = "\n".join(
+                f"- {p['id']}: {p['description']}" for p in PROJECTS
+            )
+            project_prompt = PROJECT_RELEVANCE_PROMPT.format(projects=project_list_str)
+            project_ids = [p["id"] for p in PROJECTS]
+            logger.info("[*] Classifying project relevance for %d papers..." % len(relevant_papers))
+            classify_project_relevance(
+                records=relevant_papers,
+                classifier=OAI,
+                prompt=project_prompt,
+                project_ids=project_ids,
+                paper_db=paper_db,
+            )
+        else:
+            logger.info("[*] No projects defined, skipping project classification.")
 
     logger.info("[*] Sharing summaries...")
     share_results(

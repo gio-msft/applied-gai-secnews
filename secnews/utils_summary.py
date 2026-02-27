@@ -87,6 +87,13 @@ def summarize_records(
                     affiliations, arxiv_authors, metadata["content"], record["id"]
                 )
 
+            # Extract and clamp interest_score to 1-10, default 5 if missing/malformed
+            try:
+                raw_score = int(loaded.get("interest_score", 5))
+                interest_score = max(1, min(10, raw_score))
+            except (TypeError, ValueError):
+                interest_score = 5
+
             paper_db.update(record["id"], {
                 "summarized": True,
                 "points": loaded["findings"],
@@ -94,11 +101,52 @@ def summarize_records(
                 "emoji": loaded.get("emoji", "\U0001f50d"),
                 "tag": loaded.get("tag", "general"),
                 "affiliations": affiliations,
+                "interest_score": interest_score,
             })
         except Exception as e:
             logger.error(f"Error summarizing {record['id']}: {e}")
             continue
     return True
+
+
+def classify_project_relevance(records, classifier, prompt, project_ids, paper_db):
+    """Classify which research projects (if any) a paper is relevant to.
+
+    Sends each paper's title and one-liner to the LLM along with the list of
+    active research projects. The LLM returns matching project IDs, which are
+    validated against the known set to guard against hallucination.
+
+    Skips records that already have a 'projects' key.
+    On error, defaults to an empty list (conservative: don't fabricate matches).
+    """
+    valid_ids = set(project_ids)
+    for record in records:
+        if "projects" in record:
+            continue  # already classified
+
+        title = record.get("title", "")
+        one_liner = record.get("one_liner", "")
+        prompt_text = f"Title: {title}\nSummary: {one_liner}"
+
+        try:
+            result = classifier.chat.completions.create(
+                model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": prompt_text},
+                ],
+                response_format={"type": "json_object"},
+            )
+            loaded = json.loads(result.choices[0].message.content)
+            matched = loaded.get("projects", [])
+            # Validate: strip any hallucinated project IDs
+            matched = [pid for pid in matched if pid in valid_ids]
+            paper_db.update(record["id"], {"projects": matched})
+            if matched:
+                logger.info(f"Project match for '{title}': {matched}")
+        except Exception as e:
+            logger.error(f"Error classifying projects for {record['id']}: {e}")
+            paper_db.update(record["id"], {"projects": []})
 
 
 def classify_relevance(records, classifier, relevance_prompt, paper_db):

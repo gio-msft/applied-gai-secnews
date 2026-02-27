@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from secnews.utils_summary import summarize_records, _validate_affiliations, classify_relevance
+from secnews.utils_summary import summarize_records, _validate_affiliations, classify_relevance, classify_project_relevance
 from tests.conftest import REAL_PDF_ID, PAPERS_DIR
 
 
@@ -37,6 +37,7 @@ VALID_LLM_RESPONSE = {
     "emoji": "🛡️",
     "tag": "security",
     "affiliations": ["MIT", "Stanford University"],
+    "interest_score": 8,
 }
 
 
@@ -82,6 +83,7 @@ class TestSummarizeRecordsMocked:
         assert len(rec[0]["points"]) == 3
         assert rec[0]["one_liner"] == "A novel approach to LLM security."
         assert rec[0]["affiliations"] == ["MIT", "Stanford University"]
+        assert rec[0]["interest_score"] == 8
 
     def test_missing_emoji_and_tag_get_defaults(self, tmp_path, tmp_db):
         """If LLM omits emoji/tag, defaults are applied."""
@@ -118,6 +120,7 @@ class TestSummarizeRecordsMocked:
         rec = tmp_db.find(summarized=True)[0]
         assert rec["emoji"] == "🔍"
         assert rec["tag"] == "general"
+        assert rec["interest_score"] == 5  # default when missing
 
     def test_malformed_json_skips_record(self, tmp_path, tmp_db):
         """If LLM returns invalid JSON, the record is NOT marked summarized."""
@@ -221,6 +224,93 @@ class TestSummarizeRecordsMocked:
 
         mock_dl.assert_called_once()
         assert len(tmp_db.find(summarized=True)) == 1
+
+    def test_interest_score_clamped_high(self, tmp_path, tmp_db):
+        """interest_score above 10 should be clamped to 10."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score=99)
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 10
+
+    def test_interest_score_clamped_low(self, tmp_path, tmp_db):
+        """interest_score below 1 should be clamped to 1."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score=-5)
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 1
+
+    def test_interest_score_non_numeric_defaults(self, tmp_path, tmp_db):
+        """Non-numeric interest_score should default to 5."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score="not a number")
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 5
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +423,92 @@ class TestClassifyRelevance:
             paper_db=tmp_db,
         )
         assert tmp_db.find()[0]["relevant"] is True
+
+
+class TestClassifyProjectRelevance:
+
+    def _make_classifier(self, projects):
+        classifier = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = json.dumps({"projects": projects})
+        mock_result = MagicMock()
+        mock_result.choices = [mock_choice]
+        classifier.chat.completions.create.return_value = mock_result
+        return classifier
+
+    def _insert_record(self, tmp_db, record_id="p1"):
+        tmp_db.insert({
+            "id": record_id, "url": "http://x.pdf",
+            "published": "2026-02-15T00:00:00Z",
+            "title": "Jailbreak Attack on LLMs",
+            "downloaded": True, "summarized": True,
+            "tag": "security", "one_liner": "About jailbreaks.",
+            "emoji": "🛡️", "points": ["A"], "relevant": True,
+        })
+
+    def test_matches_valid_projects(self, tmp_db):
+        """LLM returns valid project IDs — stored correctly."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier(["proj-alpha", "proj-beta"]),
+            prompt="test",
+            project_ids=["proj-alpha", "proj-beta", "proj-gamma"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == ["proj-alpha", "proj-beta"]
+
+    def test_no_matches_returns_empty(self, tmp_db):
+        """LLM returns no matches — stored as empty list."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier([]),
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == []
+
+    def test_strips_hallucinated_ids(self, tmp_db):
+        """LLM returns unknown project IDs — hallucinated IDs are stripped."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier(["proj-alpha", "hallucinated-proj"]),
+            prompt="test",
+            project_ids=["proj-alpha", "proj-beta"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == ["proj-alpha"]
+
+    def test_skips_already_classified(self, tmp_db):
+        """Records with 'projects' already set are not re-classified."""
+        self._insert_record(tmp_db)
+        tmp_db.update("p1", {"projects": ["proj-alpha"]})
+        classifier = MagicMock()
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=classifier,
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        classifier.chat.completions.create.assert_not_called()
+
+    def test_defaults_to_empty_on_error(self, tmp_db):
+        """On LLM error, paper gets empty projects list."""
+        self._insert_record(tmp_db)
+        classifier = MagicMock()
+        classifier.chat.completions.create.side_effect = Exception("API down")
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=classifier,
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == []
 
 
 class TestValidateAffiliations:
