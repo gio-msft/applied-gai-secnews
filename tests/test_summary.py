@@ -37,6 +37,7 @@ VALID_LLM_RESPONSE = {
     "emoji": "🛡️",
     "tag": "security",
     "affiliations": ["MIT", "Stanford University"],
+    "interest_score": 8,
 }
 
 
@@ -82,6 +83,7 @@ class TestSummarizeRecordsMocked:
         assert len(rec[0]["points"]) == 3
         assert rec[0]["one_liner"] == "A novel approach to LLM security."
         assert rec[0]["affiliations"] == ["MIT", "Stanford University"]
+        assert rec[0]["interest_score"] == 8
 
     def test_missing_emoji_and_tag_get_defaults(self, tmp_path, tmp_db):
         """If LLM omits emoji/tag, defaults are applied."""
@@ -118,6 +120,7 @@ class TestSummarizeRecordsMocked:
         rec = tmp_db.find(summarized=True)[0]
         assert rec["emoji"] == "🔍"
         assert rec["tag"] == "general"
+        assert rec["interest_score"] == 5  # default when missing
 
     def test_malformed_json_skips_record(self, tmp_path, tmp_db):
         """If LLM returns invalid JSON, the record is NOT marked summarized."""
@@ -221,6 +224,93 @@ class TestSummarizeRecordsMocked:
 
         mock_dl.assert_called_once()
         assert len(tmp_db.find(summarized=True)) == 1
+
+    def test_interest_score_clamped_high(self, tmp_path, tmp_db):
+        """interest_score above 10 should be clamped to 10."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score=99)
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 10
+
+    def test_interest_score_clamped_low(self, tmp_path, tmp_db):
+        """interest_score below 1 should be clamped to 1."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score=-5)
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 1
+
+    def test_interest_score_non_numeric_defaults(self, tmp_path, tmp_db):
+        """Non-numeric interest_score should default to 5."""
+        paper_path = str(tmp_path / "papers")
+        os.makedirs(paper_path)
+        shutil.copy(
+            os.path.join(PAPERS_DIR, f"{REAL_PDF_ID}.pdf"),
+            os.path.join(paper_path, f"{REAL_PDF_ID}.pdf"),
+        )
+        tmp_db.insert({
+            "id": REAL_PDF_ID,
+            "url": f"http://arxiv.org/pdf/{REAL_PDF_ID}.pdf",
+            "published": "2026-02-10T00:00:00Z",
+            "title": "Test",
+            "authors": [],
+            "downloaded": True,
+            "summarized": False,
+        })
+        response = dict(VALID_LLM_RESPONSE, interest_score="not a number")
+        summarizer = _make_mock_summarizer(response)
+        summarize_records(
+            records=tmp_db.find(summarized=False),
+            summarizer=summarizer,
+            summarizer_prompt="Test prompt",
+            paper_path=paper_path,
+            paper_db=tmp_db,
+        )
+        rec = tmp_db.find(summarized=True)[0]
+        assert rec["interest_score"] == 5
 
 
 # ---------------------------------------------------------------------------

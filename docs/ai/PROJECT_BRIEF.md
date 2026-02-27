@@ -15,6 +15,7 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
                                              ▼
                                     summarize_records() ──▶ Azure OpenAI
                                              │               (JSON mode)
+                                             │          (includes interest_score)
                                              ▼
                                    classify_relevance() ──▶ relevant: T/F
                                              │
@@ -23,6 +24,7 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
                                              │
                                              ▼
                                       share_results()
+                                       ├── sort by interest_score desc
                                        ├── summaries/YYYY-MM-DD.md
                                        └── summaries/YYYY-MM-DD.eml
 ```
@@ -56,15 +58,21 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
   "tag": "security",            // security | cyber | general
   "affiliations": ["MIT"],
   "relevant": true,             // newsletter-relevant?
-  "projects": ["backdoor-detection"]  // matched research projects
+  "projects": ["backdoor-detection"],  // matched research projects
+  "interest_score": 8            // 1-10 interest/quality rating from LLM
 }
 ```
 
-Fields are added progressively: search → download → summarize → classify → project-match.
+Fields are added progressively: search → download → summarize (includes `interest_score`) → classify → project-match.
+
+Newsletter output is sorted by `interest_score` descending (ties broken by published date, newest first). Legacy records without a score are treated as `5`.
 
 ## Commands
 
 ```bash
+# Activate conda environment
+conda activate papers
+
 # Normal run (search + download + summarize + classify + share)
 python deepthought.py
 
@@ -106,6 +114,6 @@ python -m pytest tests/ -v -m integration
 
 - **`PaperDB` is a flat JSON file** (~10k records). Every `insert()`/`update()` rewrites the entire file. Works fine at current scale but will not scale to 100k+ records.
 - **`deepthought.py` instantiates `AzureOpenAI` at import time** (line 37). This means importing the module crashes if env vars are missing — relevant for tests that import from it.
-- **`reset_summarized()` must list all derived fields** to pop. When adding new fields to the record schema, update the tuple in `utils_db.py` (`points`, `one_liner`, `emoji`, `tag`, `affiliations`, `relevant`, `projects`).
+- **`reset_summarized()` must list all derived fields** to pop. When adding new fields to the record schema, update the tuple in `utils_db.py` (`points`, `one_liner`, `emoji`, `tag`, `affiliations`, `relevant`, `projects`, `interest_score`).
 - **arXiv rate limits**: The API has undocumented rate limits. The pipeline sleeps between requests but can still get 503s under heavy load.
 - **Search cache is time-based only** (`search_state.json`). If you change a query string, the old cache entry becomes stale automatically (different key), but the old results from the previous query remain in the DB.
