@@ -198,6 +198,7 @@ class TestPaperDBResetSummarized:
             "one_liner": "New paper.", "points": ["B"],
             "affiliations": ["Stanford"],
             "relevant": True,
+            "interest_score": 8,
         })
         db.insert({
             "id": "new-unsumm",
@@ -220,6 +221,7 @@ class TestPaperDBResetSummarized:
         assert "emoji" not in rec
         assert "affiliations" not in rec
         assert "relevant" not in rec
+        assert "interest_score" not in rec
 
     def test_leaves_old_records_untouched(self, tmp_db):
         self._populate(tmp_db)

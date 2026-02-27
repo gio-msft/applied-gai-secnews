@@ -87,6 +87,13 @@ def summarize_records(
                     affiliations, arxiv_authors, metadata["content"], record["id"]
                 )
 
+            # Extract and clamp interest_score to 1-10, default 5 if missing/malformed
+            try:
+                raw_score = int(loaded.get("interest_score", 5))
+                interest_score = max(1, min(10, raw_score))
+            except (TypeError, ValueError):
+                interest_score = 5
+
             paper_db.update(record["id"], {
                 "summarized": True,
                 "points": loaded["findings"],
@@ -94,6 +101,7 @@ def summarize_records(
                 "emoji": loaded.get("emoji", "\U0001f50d"),
                 "tag": loaded.get("tag", "general"),
                 "affiliations": affiliations,
+                "interest_score": interest_score,
             })
         except Exception as e:
             logger.error(f"Error summarizing {record['id']}: {e}")

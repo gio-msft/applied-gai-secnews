@@ -18,9 +18,11 @@ def _format_authors(authors: list, max_authors: int = 3) -> str:
 
 def _format_record_markdown(record: dict) -> str:
     """Format a single record for markdown."""
+    score = record.get("interest_score")
+    score_str = f" `{score}/10`" if score is not None else ""
     content = (
         f"{record['emoji']} **{record['title']}** [source]({record['url']}) "
-        f"#{record['tag']} \n"
+        f"#{record['tag']}{score_str} \n"
     )
     authors = record.get("authors", [])
     affiliations = record.get("affiliations", [])
@@ -45,9 +47,10 @@ def _format_projects_html(record: dict) -> str:
     projects = record.get("projects", [])
     if not projects:
         return ""
+    joined = ", ".join(projects)
     return (
         f'<p style="margin:6px 0 0 0;color:#555;font-size:0.85em;">'
-        f'\U0001f4cc Relevant to: {', '.join(projects)}</p>'
+        f'\U0001f4cc Relevant to: {joined}</p>'
     )
 
 
@@ -69,6 +72,12 @@ def _format_record_html(record: dict) -> str:
             f'<p style="margin:0 0 4px 0;color:#888;font-size:0.85em;">'
             f'{" ".join(parts)}</p>'
         )
+    score = record.get("interest_score")
+    score_html = (
+        f' <span style="color:#b45309;font-weight:bold;font-size:0.85em;">'
+        f'{score}/10</span>'
+        if score is not None else ""
+    )
     return (
         f'<div style="margin-bottom:24px;">'
         f'<p style="margin:0 0 6px 0;">'
@@ -76,6 +85,7 @@ def _format_record_html(record: dict) -> str:
         f'<b><a href="{record["url"]}" style="color:#1a0dab;text-decoration:none;">'
         f'{record["title"]}</a></b> '
         f'<span style="color:#666;font-size:0.85em;">#{record["tag"]}</span>'
+        f'{score_html}'
         f'</p>'
         f'{byline}'
         f'<p style="margin:0 0 6px 0;color:#333;">{record["one_liner"]}</p>'
@@ -109,9 +119,15 @@ def share_results(
             logger.info("No relevant papers to share after filtering.")
             return False
 
+        # Sort by interest_score descending, then by published date descending (newest first)
+        records.sort(
+            key=lambda r: (r.get("interest_score", 5), r.get("published", "")),
+            reverse=True,
+        )
+
         logger.info(f"Found {len(records)} records to share.")
         for record in records:
-            logger.debug(f"{record['published']} {record['title']}")
+            logger.debug(f"[{record.get('interest_score', '?')}/10] {record['published']} {record['title']}")
 
         markdown = "".join(_format_record_markdown(r) for r in records)
         html = "".join(_format_record_html(r) for r in records)

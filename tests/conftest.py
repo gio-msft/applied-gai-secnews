@@ -48,6 +48,8 @@ def sample_summarized_record():
         "one_liner": "A novel approach to detecting jailbreak attempts in LLMs.",
         "affiliations": ["MIT", "Stanford University"],
         "relevant": True,
+        "projects": [],
+        "interest_score": 7,
         "points": [
             "Finding one about jailbreak detection rates.",
             "Finding two about false positive reduction.",
