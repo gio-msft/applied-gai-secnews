@@ -16522,7 +16522,10 @@
       "UK AI Security Institute",
       "OATML, University of Oxford"
     ],
-    "relevant": true
+    "relevant": true,
+    "projects": [
+      "backdoor-detection"
+    ]
   },
   {
     "id": "2406.12702v2",
@@ -17622,7 +17625,10 @@
     "affiliations": [
       "Silverfort"
     ],
-    "relevant": true
+    "relevant": true,
+    "projects": [
+      "backdoor-detection"
+    ]
   },
   {
     "id": "2508.03054v1",
@@ -18147,7 +18153,10 @@
       "The University of Queensland",
       "CSIRO"
     ],
-    "relevant": true
+    "relevant": true,
+    "projects": [
+      "backdoor-detection"
+    ]
   },
   {
     "id": "2505.12287v1",

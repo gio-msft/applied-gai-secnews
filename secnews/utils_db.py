@@ -62,7 +62,7 @@ class PaperDB:
         for record in self._data:
             if record["published"] >= published_gte and record.get("summarized"):
                 record["summarized"] = False
-                for key in ("points", "one_liner", "emoji", "tag", "affiliations", "relevant"):
+                for key in ("points", "one_liner", "emoji", "tag", "affiliations", "relevant", "projects"):
                     record.pop(key, None)
                 count += 1
         if count:

@@ -101,6 +101,46 @@ def summarize_records(
     return True
 
 
+def classify_project_relevance(records, classifier, prompt, project_ids, paper_db):
+    """Classify which research projects (if any) a paper is relevant to.
+
+    Sends each paper's title and one-liner to the LLM along with the list of
+    active research projects. The LLM returns matching project IDs, which are
+    validated against the known set to guard against hallucination.
+
+    Skips records that already have a 'projects' key.
+    On error, defaults to an empty list (conservative: don't fabricate matches).
+    """
+    valid_ids = set(project_ids)
+    for record in records:
+        if "projects" in record:
+            continue  # already classified
+
+        title = record.get("title", "")
+        one_liner = record.get("one_liner", "")
+        prompt_text = f"Title: {title}\nSummary: {one_liner}"
+
+        try:
+            result = classifier.chat.completions.create(
+                model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": prompt_text},
+                ],
+                response_format={"type": "json_object"},
+            )
+            loaded = json.loads(result.choices[0].message.content)
+            matched = loaded.get("projects", [])
+            # Validate: strip any hallucinated project IDs
+            matched = [pid for pid in matched if pid in valid_ids]
+            paper_db.update(record["id"], {"projects": matched})
+            if matched:
+                logger.info(f"Project match for '{title}': {matched}")
+        except Exception as e:
+            logger.error(f"Error classifying projects for {record['id']}: {e}")
+            paper_db.update(record["id"], {"projects": []})
+
+
 def classify_relevance(records, classifier, relevance_prompt, paper_db):
     """Classify summarized records as relevant/irrelevant using a second LLM call.
 

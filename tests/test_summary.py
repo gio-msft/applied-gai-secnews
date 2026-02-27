@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from secnews.utils_summary import summarize_records, _validate_affiliations, classify_relevance
+from secnews.utils_summary import summarize_records, _validate_affiliations, classify_relevance, classify_project_relevance
 from tests.conftest import REAL_PDF_ID, PAPERS_DIR
 
 
@@ -333,6 +333,92 @@ class TestClassifyRelevance:
             paper_db=tmp_db,
         )
         assert tmp_db.find()[0]["relevant"] is True
+
+
+class TestClassifyProjectRelevance:
+
+    def _make_classifier(self, projects):
+        classifier = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = json.dumps({"projects": projects})
+        mock_result = MagicMock()
+        mock_result.choices = [mock_choice]
+        classifier.chat.completions.create.return_value = mock_result
+        return classifier
+
+    def _insert_record(self, tmp_db, record_id="p1"):
+        tmp_db.insert({
+            "id": record_id, "url": "http://x.pdf",
+            "published": "2026-02-15T00:00:00Z",
+            "title": "Jailbreak Attack on LLMs",
+            "downloaded": True, "summarized": True,
+            "tag": "security", "one_liner": "About jailbreaks.",
+            "emoji": "🛡️", "points": ["A"], "relevant": True,
+        })
+
+    def test_matches_valid_projects(self, tmp_db):
+        """LLM returns valid project IDs — stored correctly."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier(["proj-alpha", "proj-beta"]),
+            prompt="test",
+            project_ids=["proj-alpha", "proj-beta", "proj-gamma"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == ["proj-alpha", "proj-beta"]
+
+    def test_no_matches_returns_empty(self, tmp_db):
+        """LLM returns no matches — stored as empty list."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier([]),
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == []
+
+    def test_strips_hallucinated_ids(self, tmp_db):
+        """LLM returns unknown project IDs — hallucinated IDs are stripped."""
+        self._insert_record(tmp_db)
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=self._make_classifier(["proj-alpha", "hallucinated-proj"]),
+            prompt="test",
+            project_ids=["proj-alpha", "proj-beta"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == ["proj-alpha"]
+
+    def test_skips_already_classified(self, tmp_db):
+        """Records with 'projects' already set are not re-classified."""
+        self._insert_record(tmp_db)
+        tmp_db.update("p1", {"projects": ["proj-alpha"]})
+        classifier = MagicMock()
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=classifier,
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        classifier.chat.completions.create.assert_not_called()
+
+    def test_defaults_to_empty_on_error(self, tmp_db):
+        """On LLM error, paper gets empty projects list."""
+        self._insert_record(tmp_db)
+        classifier = MagicMock()
+        classifier.chat.completions.create.side_effect = Exception("API down")
+        classify_project_relevance(
+            records=tmp_db.find(summarized=True),
+            classifier=classifier,
+            prompt="test",
+            project_ids=["proj-alpha"],
+            paper_db=tmp_db,
+        )
+        assert tmp_db.find()[0]["projects"] == []
 
 
 class TestValidateAffiliations:
