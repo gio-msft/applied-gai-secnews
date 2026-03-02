@@ -97,7 +97,7 @@ python deepthought.py --no-interactive
 # Run unit tests (integration tests excluded by default)
 python -m pytest tests/ -v
 
-# Run integration tests (requires Azure OpenAI credentials in .env)
+# Run integration tests (requires Azure OpenAI endpoint + Entra ID login)
 python -m pytest tests/ -v -m integration
 ```
 
@@ -113,7 +113,7 @@ python -m pytest tests/ -v -m integration
 ## Known Pitfalls
 
 - **`PaperDB` is a flat JSON file** (~10k records). Every `insert()`/`update()` rewrites the entire file. Works fine at current scale but will not scale to 100k+ records.
-- **`deepthought.py` instantiates `AzureOpenAI` at import time** (line 37). This means importing the module crashes if env vars are missing — relevant for tests that import from it.
+- **`deepthought.py` instantiates `AzureOpenAI` at import time** (line ~40). Uses `DefaultAzureCredential` via `azure-identity` for Entra ID token-based auth (`azure_ad_token_provider`). The token is fetched lazily on first API call. Importing the module still requires `AZURE_OPENAI_ENDPOINT` in the environment — relevant for tests that import from it.
 - **`reset_summarized()` must list all derived fields** to pop. When adding new fields to the record schema, update the tuple in `utils_db.py` (`points`, `one_liner`, `emoji`, `tag`, `affiliations`, `relevant`, `projects`, `interest_score`).
 - **arXiv rate limits**: The API has undocumented rate limits. The pipeline sleeps between requests but can still get 503s under heavy load.
 - **Search cache is time-based only** (`search_state.json`). If you change a query string, the old cache entry becomes stale automatically (different key), but the old results from the previous query remain in the DB.
