@@ -6,6 +6,7 @@ import logging
 import datetime
 import argparse
 
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 
 from secnews.utils_db import PaperDB
@@ -16,7 +17,7 @@ from secnews.utils_search import execute_searches, assemble_feeds, prune_feeds
 
 
 # Load environment variables from .env file
-# Ensure you have a .env file with AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY set
+# Ensure you have a .env file with AZURE_OPENAI_ENDPOINT set
 dotenv.load_dotenv(".env")
 
 logger = logging.getLogger("AIRT-GAI-SecNews")
@@ -31,9 +32,13 @@ BASE_URL = "https://export.arxiv.org/api/query"
 BASE_OFFSET = 0
 DB_PATH = "papers.json"
 MAX_RESULTS = 100
+_credential = DefaultAzureCredential()
+_token_provider = get_bearer_token_provider(
+    _credential, "https://cognitiveservices.azure.com/.default"
+)
 OAI = AzureOpenAI(
     azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    azure_ad_token_provider=_token_provider,
     api_version="2025-01-01-preview",
 )
 PROCESS_DAYS = 7
