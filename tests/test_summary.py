@@ -568,15 +568,15 @@ class TestValidateAffiliations:
 def test_real_llm_summarization(tmp_path, tmp_db):
     """End-to-end test with real Azure OpenAI. Run with: pytest -m integration"""
     import dotenv
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
     from openai import AzureOpenAI
 
     dotenv.load_dotenv(".env")
 
     endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
     model = os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME")
-    if not all([endpoint, api_key, model]):
-        pytest.skip("Azure OpenAI credentials not configured")
+    if not all([endpoint, model]):
+        pytest.skip("Azure OpenAI endpoint/model not configured")
 
     paper_path = str(tmp_path / "papers")
     os.makedirs(paper_path)
@@ -594,9 +594,13 @@ def test_real_llm_summarization(tmp_path, tmp_db):
         "summarized": False,
     })
 
+    credential = DefaultAzureCredential()
+    token_provider = get_bearer_token_provider(
+        credential, "https://cognitiveservices.azure.com/.default"
+    )
     oai = AzureOpenAI(
         azure_endpoint=endpoint,
-        api_key=api_key,
+        azure_ad_token_provider=token_provider,
         api_version="2025-01-01-preview",
     )
 
