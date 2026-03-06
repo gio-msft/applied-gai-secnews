@@ -55,8 +55,12 @@ def execute_searches(
         max_results_per_request = item["max_results"]
         logger.info("[%d/%d] Searching: %s", i, len(params), search_query)
 
+        retry_count = 0
+        max_retries = 5
+        backoff_base = 15  # seconds
+        
         while True:
-            time.sleep(random.uniform(0.5, 1.5))
+            time.sleep(random.uniform(2.0, 4.0))
 
             current_params = {
                 "search_query": search_query,
@@ -70,6 +74,58 @@ def execute_searches(
             response = requests.get(base, params=payload_str)
             feed = feedparser.parse(response.content)
 
+            # Check if the API returned a valid response with OpenSearch metadata
+            if not hasattr(feed.feed, 'opensearch_totalresults'):
+                logger.warning(
+                    "API response missing opensearch_totalresults (likely rate limited or error)"
+                )
+                
+                # Log detailed error information
+                logger.debug("Response status: %d", response.status_code)
+                logger.debug("Feed keys: %s", list(feed.feed.keys()) if hasattr(feed, 'feed') else 'none')
+                
+                # Check for error entries in the feed
+                if hasattr(feed.feed, 'title'):
+                    logger.error("Feed title: %s", feed.feed.title)
+                if hasattr(feed.feed, 'subtitle'):
+                    logger.error("Feed subtitle: %s", feed.feed.subtitle)
+                if feed.entries:
+                    logger.error("Feed has %d entries despite missing opensearch data", len(feed.entries))
+                else:
+                    logger.error("Feed has no entries - likely malformed query or API rejection")
+                    # Log first 500 chars of response for debugging
+                    logger.debug("Response preview: %s", response.text[:500])
+                
+                # Retry with exponential backoff + jitter
+                if retry_count < max_retries:
+                    retry_count += 1
+                    
+                    # Use longer backoff for rate limit errors (429)
+                    if response.status_code == 429:
+                        base_wait = backoff_base * 2 * (2 ** (retry_count - 1))  # Double the backoff for 429
+                        logger.warning("Rate limit (429) detected - using extended backoff")
+                    else:
+                        base_wait = backoff_base * (2 ** (retry_count - 1))
+                    
+                    # Add random jitter between 0.5x and 1.5x the base wait time
+                    jitter = random.uniform(0.5, 1.5)
+                    wait_time = int(base_wait * jitter)
+                    logger.info(
+                        "Retry %d/%d after %d seconds...",
+                        retry_count, max_retries, wait_time
+                    )
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(
+                        "Max retries exceeded for query: %s at start=%d",
+                        search_query, current_start
+                    )
+                    break  # Skip to next search query
+
+            # Valid response, reset retry counter
+            retry_count = 0
+            
             total_results = int(feed.feed.opensearch_totalresults)
             start_index = int(feed.feed.opensearch_startindex)
             returned_results = len(feed.entries)
