@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paper Graph — GAI Security News</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Toolbar -->
+  <header id="toolbar">
+    <div class="toolbar-left">
+      <h1 class="toolbar-title">📊 Paper Graph</h1>
+      <div class="layer-toggle" role="radiogroup" aria-label="Edge layer">
+        <button class="layer-btn active" data-layer="citations" aria-pressed="true">Citations</button>
+        <button class="layer-btn" data-layer="authors" aria-pressed="false">Shared Authors</button>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search papers…" autocomplete="off" />
+        <button id="search-clear" class="icon-btn" title="Clear search" aria-label="Clear search">&times;</button>
+      </div>
+      <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+        <span class="theme-icon-light">☀️</span>
+        <span class="theme-icon-dark">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Legend -->
+  <div id="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--color-security)"></span> Security</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--color-cyber)"></span> Cyber</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--color-general)"></span> General</div>
+  </div>
+
+  <!-- Graph container -->
+  <div id="graph-container"></div>
+
+  <!-- Hover tooltip -->
+  <div id="node-tooltip" class="node-tooltip hidden"></div>
+
+  <!-- Paper card panel -->
+  <aside id="card-panel" class="card-panel hidden" aria-label="Paper details">
+    <button id="card-close" class="icon-btn card-close" title="Close" aria-label="Close panel">&times;</button>
+    <div id="card-content">
+      <h2 id="card-title"></h2>
+      <div id="card-meta">
+        <span id="card-score" class="badge score-badge"></span>
+        <span id="card-tag" class="badge tag-badge"></span>
+        <time id="card-date"></time>
+      </div>
+      <p id="card-authors" class="card-authors"></p>
+      <p id="card-affiliations" class="card-affiliations"></p>
+      <a id="card-link" class="card-link" target="_blank" rel="noopener noreferrer">View on arXiv →</a>
+      <p id="card-oneliner" class="card-oneliner"></p>
+      <ul id="card-points" class="card-points"></ul>
+      <div id="card-projects" class="card-projects"></div>
+      <div id="card-linked" class="card-linked"></div>
+    </div>
+  </aside>
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Loading graph data…</p>
+  </div>
+
+  <!-- Dependencies from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sigma@3.0.2/dist/sigma.min.js"></script>
+
+  <!-- App -->
+  <script src="js/app.js"></script>
+</body>
+</html>

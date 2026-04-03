@@ -1,8 +1,10 @@
 azure-identity
 feedparser
+networkx
 openai
 pypdf
 pytest
+pytest-playwright
 python-dotenv
 requests
 requests-futures

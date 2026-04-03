@@ -211,6 +211,10 @@ if __name__ == "__main__":
         "--reclassify-projects", action="store_true",
         help="Re-run project classification on relevant papers in the window",
     )
+    parser.add_argument(
+        "--build-viz", action="store_true",
+        help="Build interactive graph visualization after sharing results",
+    )
     args = parser.parse_args()
 
     logger.info("[$] Starting AIRT-GAI-SecNews...")
@@ -328,5 +332,10 @@ if __name__ == "__main__":
         summaries_path=SUMMARIES_PATH,
         include_all=args.include_general,
     )
+
+    if args.build_viz:
+        from build_viz import build_graph
+        logger.info("[*] Building interactive graph visualization...")
+        build_graph(db_path=DB_PATH)
 
     logger.info("[$] FIN")
