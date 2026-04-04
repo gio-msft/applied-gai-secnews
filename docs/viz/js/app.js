@@ -575,4 +575,35 @@
     hideCard();
     clearHighlight();
   });
+
+  // --- Card panel resize ---------------------------------------------------
+  (function () {
+    var handle = document.getElementById("card-resize-handle");
+    var panel = document.getElementById("card-panel");
+    var isResizing = false;
+
+    handle.addEventListener("mousedown", function (e) {
+      isResizing = true;
+      handle.classList.add("active");
+      panel.classList.add("resizing");
+      e.preventDefault();
+    });
+
+    document.addEventListener("mousemove", function (e) {
+      if (!isResizing) return;
+      var newWidth = window.innerWidth - e.clientX;
+      var min = 280;
+      var max = window.innerWidth * 0.8;
+      newWidth = Math.max(min, Math.min(max, newWidth));
+      panel.style.width = newWidth + "px";
+    });
+
+    document.addEventListener("mouseup", function () {
+      if (isResizing) {
+        isResizing = false;
+        handle.classList.remove("active");
+        panel.classList.remove("resizing");
+      }
+    });
+  })();
 })();
