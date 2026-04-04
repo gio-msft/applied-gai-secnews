@@ -14,8 +14,8 @@
   };
 
   const EDGE_COLORS = {
-    citations: { light: "rgba(70,70,160,0.5)",   dark: "rgba(140,160,255,0.2)" },
-    authors:   { light: "rgba(160,70,70,0.5)",    dark: "rgba(255,160,140,0.25)" },
+    citations: { light: "rgba(70,70,160,0.5)",   dark: "rgba(140,160,255,0.35)" },
+    authors:   { light: "rgba(160,70,70,0.5)",    dark: "rgba(255,160,140,0.45)" },
   };
 
   const MIN_NODE_SIZE = 1.5;
@@ -73,7 +73,7 @@
 
   // --- Graph init ----------------------------------------------------------
   function initGraph() {
-    graph = new graphology.Graph({ type: "directed", multi: false });
+    graph = new graphology.Graph({ type: "undirected", multi: false });
 
     // Add nodes
     graphData.nodes.forEach(function (n) {
@@ -102,7 +102,7 @@
       renderLabels: false,
       enableEdgeEvents: false,
       defaultEdgeColor: EDGE_COLORS[activeLayer][currentTheme()],
-      defaultEdgeType: activeLayer === "citations" ? "arrow" : "line",
+      defaultEdgeType: "line",
       minCameraRatio: 0.02,
       maxCameraRatio: 20,
       // Suppress all canvas-rendered labels and hover boxes
@@ -285,15 +285,22 @@
     // Node reducer for hover / selection dimming
     renderer.setSetting("nodeReducer", function (node, data) {
       var res = Object.assign({}, data);
+
+      // Highlight the selected node — keep original color, overlay does the ring
+      if (node === selectedNode) {
+        res.zIndex = 10;
+        return res;
+      }
+
       if (highlightedNode && highlightedNode !== node) {
         if (!graph.hasEdge(highlightedNode, node) && !graph.hasEdge(node, highlightedNode)) {
-          res.color = currentTheme() === "dark" ? "#333" : "#ddd";
+          res.color = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
           res.label = "";
         }
       }
       if (selectedNode && selectedNode !== node) {
         if (!graph.hasEdge(selectedNode, node) && !graph.hasEdge(node, selectedNode)) {
-          res.color = currentTheme() === "dark" ? "#333" : "#ddd";
+          res.color = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
           res.label = "";
         }
       }
@@ -318,6 +325,11 @@
       }
       return res;
     });
+
+    // Keep selection ring in sync with camera movement
+    renderer.on("afterRender", function () {
+      if (selectedNode) updateSelectionRing();
+    });
   }
 
   // --- Edge management -----------------------------------------------------
@@ -336,7 +348,7 @@
       graph.addEdge(e.source, e.target, {
         color: color,
         size: size,
-        type: layer === "citations" ? "arrow" : "line",
+        type: "line",
       });
     });
   }
@@ -350,7 +362,7 @@
     activeLayer = layer;
     clearEdges();
     addEdges(layer);
-    renderer.setSetting("defaultEdgeType", layer === "citations" ? "arrow" : "line");
+    renderer.setSetting("defaultEdgeType", "line");
     renderer.refresh();
   }
 
@@ -422,39 +434,53 @@
       projEl.appendChild(span);
     });
 
-    // --- Linked nodes section ---
-    var linkedEl = document.getElementById("card-linked");
-    linkedEl.innerHTML = "";
-    if (graph && graph.hasNode(data.id)) {
-      var neighbors = graph.neighbors(data.id);
-      if (neighbors.length > 0) {
-        var heading = document.createElement("h3");
-        heading.className = "card-linked-heading";
-        heading.textContent = "Linked Papers (" + neighbors.length + ")";
-        linkedEl.appendChild(heading);
-        var list = document.createElement("ul");
-        list.className = "card-linked-list";
-        neighbors.forEach(function (nid) {
-          var nData = graph.getNodeAttribute(nid, "_data");
-          var li = document.createElement("li");
-          var link = document.createElement("a");
-          link.href = "#";
-          link.className = "card-linked-item";
-          link.textContent = (nData.emoji || "") + " " + (nData.title || nid);
-          link.addEventListener("click", function (e) {
-            e.preventDefault();
-            selectedNode = nid;
-            showCard(nData);
-            highlightNode(nid);
-            var pos = renderer.getNodeDisplayData(nid);
-            renderer.getCamera().animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
-          });
-          li.appendChild(link);
-          list.appendChild(li);
+    // --- Linked nodes sections (always both, from raw graphData) ---
+    function buildLinkedSection(containerId, heading, neighborIds) {
+      var el = document.getElementById(containerId);
+      el.innerHTML = "";
+      if (!neighborIds || neighborIds.length === 0) return;
+      var h = document.createElement("h3");
+      h.className = "card-linked-heading";
+      h.textContent = heading + " (" + neighborIds.length + ")";
+      el.appendChild(h);
+      var list = document.createElement("ul");
+      list.className = "card-linked-list";
+      neighborIds.forEach(function (nid) {
+        if (!graph.hasNode(nid)) return;
+        var nData = graph.getNodeAttribute(nid, "_data");
+        var li = document.createElement("li");
+        var link = document.createElement("a");
+        link.href = "#";
+        link.className = "card-linked-item";
+        link.textContent = (nData.emoji || "") + " " + (nData.title || nid);
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          showCard(nData);
+          highlightNode(nid);
+          var pos = renderer.getNodeDisplayData(nid);
+          renderer.getCamera().animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
         });
-        linkedEl.appendChild(list);
-      }
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      el.appendChild(list);
     }
+
+    // Collect citation neighbors from graphData edges
+    var citationNeighbors = [];
+    (graphData.citation_edges || []).forEach(function (e) {
+      if (e.source === data.id) citationNeighbors.push(e.target);
+      if (e.target === data.id) citationNeighbors.push(e.source);
+    });
+    buildLinkedSection("card-linked-citations", "Cited / Cited By", citationNeighbors);
+
+    // Collect author-overlap neighbors from graphData edges
+    var authorNeighbors = [];
+    (graphData.author_edges || []).forEach(function (e) {
+      if (e.source === data.id) authorNeighbors.push(e.target);
+      if (e.target === data.id) authorNeighbors.push(e.source);
+    });
+    buildLinkedSection("card-linked-authors", "Shared Authors", authorNeighbors);
 
     cardPanel.classList.remove("hidden");
   }
@@ -469,15 +495,47 @@
     clearHighlight();
   });
 
+  // --- Selection ring overlay ----------------------------------------------
+  var selectionRing = document.getElementById("selection-ring");
+
+  function updateSelectionRing() {
+    if (!selectedNode || !renderer || !graph.hasNode(selectedNode)) {
+      selectionRing.classList.add("hidden");
+      return;
+    }
+    var nodeData = graph.getNodeAttributes(selectedNode);
+    if (!nodeData) {
+      selectionRing.classList.add("hidden");
+      return;
+    }
+    // Convert graph coordinates to viewport pixel coordinates
+    var viewportPos = renderer.graphToViewport({ x: nodeData.x, y: nodeData.y });
+    var displayData = renderer.getNodeDisplayData(selectedNode);
+    var nodeSize = displayData ? displayData.size : 5;
+    // Scale node size by camera zoom so the ring always wraps the visible circle
+    var cameraRatio = renderer.getCamera().getState().ratio;
+    var screenNodeSize = nodeSize / cameraRatio;
+    var ringSize = Math.max(screenNodeSize * 2 + 6, nodeSize * 2 + 6);
+    var graphContainer = document.getElementById("graph-container");
+    var rect = graphContainer.getBoundingClientRect();
+    selectionRing.style.width = ringSize + "px";
+    selectionRing.style.height = ringSize + "px";
+    selectionRing.style.left = (rect.left + viewportPos.x - ringSize / 2) + "px";
+    selectionRing.style.top = (rect.top + viewportPos.y - ringSize / 2) + "px";
+    selectionRing.classList.remove("hidden");
+  }
+
   // --- Highlight / focus ---------------------------------------------------
   function highlightNode(nodeId) {
     selectedNode = nodeId;
     renderer.refresh();
+    updateSelectionRing();
   }
 
   function clearHighlight() {
     selectedNode = null;
     highlightedNode = null;
+    selectionRing.classList.add("hidden");
     renderer.refresh();
   }
 
@@ -500,7 +558,6 @@
     });
 
     if (match) {
-      selectedNode = match;
       var attrs = graph.getNodeAttributes(match);
       showCard(attrs._data);
 
@@ -508,7 +565,7 @@
       var pos = renderer.getNodeDisplayData(match);
       var camera = renderer.getCamera();
       camera.animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
-      renderer.refresh();
+      highlightNode(match);
     }
   });
 

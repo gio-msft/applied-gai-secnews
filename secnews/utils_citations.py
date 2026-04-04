@@ -9,6 +9,7 @@ subsequent runs.
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 
@@ -21,6 +22,14 @@ S2_BATCH_SIZE = 500  # API max per request
 S2_FIELDS = "references.externalIds,citations.externalIds"
 S2_RATE_LIMIT_DELAY = 1.0  # seconds between requests
 S2_MAX_RETRIES = 5
+
+
+def _strip_version(arxiv_id):
+    """Strip version suffix (e.g. 'v1', 'v2') from an arXiv ID.
+
+    Semantic Scholar does not accept versioned arXiv IDs.
+    """
+    return re.sub(r"v\d+$", "", arxiv_id)
 
 
 def _s2_headers():
@@ -63,6 +72,7 @@ def save_cache(cache, cache_path):
 def _fetch_batch(arxiv_ids, session):
     """Call the S2 batch endpoint for a list of arXiv IDs.
 
+    *arxiv_ids* should already be version-stripped.
     Returns the raw JSON response list (one entry per requested ID,
     ``None`` for papers not found).
     """
@@ -118,13 +128,38 @@ def fetch_citations(paper_ids, db_id_set, cache_path="citations_cache.json",
     logger.info("Fetching citations for %d new papers (%d already cached)…",
                 len(to_fetch), len(cache))
 
+    # Build mapping: stripped arXiv ID → versioned DB ID(s)
+    # S2 returns unversioned arXiv IDs, our DB uses versioned ones.
+    stripped_to_versioned = {}
+    for pid in db_id_set:
+        stripped = _strip_version(pid)
+        stripped_to_versioned.setdefault(stripped, set()).add(pid)
+
+    def _resolve_to_db(raw_arxiv_ids):
+        """Map a set of (possibly unversioned) arXiv IDs to DB IDs."""
+        resolved = set()
+        for aid in raw_arxiv_ids:
+            # Try direct match first (versioned)
+            if aid in db_id_set:
+                resolved.add(aid)
+            else:
+                # Try stripped match
+                stripped = _strip_version(aid)
+                for vid in stripped_to_versioned.get(stripped, []):
+                    resolved.add(vid)
+                for vid in stripped_to_versioned.get(aid, []):
+                    resolved.add(vid)
+        return resolved
+
     session = requests.Session()
     for batch_start in range(0, len(to_fetch), S2_BATCH_SIZE):
         batch = to_fetch[batch_start:batch_start + S2_BATCH_SIZE]
         logger.info("  S2 batch %d–%d of %d…",
                      batch_start + 1, batch_start + len(batch), len(to_fetch))
 
-        results = _fetch_batch(batch, session)
+        # Strip versions for the S2 query
+        stripped_batch = [_strip_version(pid) for pid in batch]
+        results = _fetch_batch(stripped_batch, session)
 
         for arxiv_id, result in zip(batch, results):
             if result is None:
@@ -132,13 +167,13 @@ def fetch_citations(paper_ids, db_id_set, cache_path="citations_cache.json",
                 cache[arxiv_id] = {"references": [], "cited_by": []}
                 continue
 
-            refs = _extract_arxiv_ids(result.get("references") or [])
-            cites = _extract_arxiv_ids(result.get("citations") or [])
+            raw_refs = _extract_arxiv_ids(result.get("references") or [])
+            raw_cites = _extract_arxiv_ids(result.get("citations") or [])
 
-            # Keep only IDs that exist in our DB
+            # Resolve to versioned DB IDs
             cache[arxiv_id] = {
-                "references": sorted(refs & db_id_set),
-                "cited_by": sorted(cites & db_id_set),
+                "references": sorted(_resolve_to_db(raw_refs)),
+                "cited_by": sorted(_resolve_to_db(raw_cites)),
             }
 
         save_cache(cache, cache_path)
