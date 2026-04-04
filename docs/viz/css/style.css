@@ -109,6 +109,10 @@ html, body {
   gap: 16px;
 }
 
+.toolbar-logo {
+  flex-shrink: 0;
+}
+
 .toolbar-title {
   font-size: 16px;
   font-weight: 700;
