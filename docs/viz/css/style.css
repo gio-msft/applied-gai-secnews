@@ -181,8 +181,13 @@ html, body {
   right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 18px;
+  font-size: 16px;
   color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  border: none;
+  padding: 0;
 }
 
 /* Icon buttons */
