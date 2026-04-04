@@ -122,7 +122,8 @@ def _compute_layout(nodes, citation_edges, author_edges):
 
     logger.info("Computing layout for %d nodes, %d edges…",
                 G.number_of_nodes(), G.number_of_edges())
-    pos = nx.spring_layout(G, k=0.3, iterations=100, seed=42)
+    # High k value spreads disconnected nodes; many iterations settle connected clusters
+    pos = nx.spring_layout(G, k=1.5, iterations=200, seed=42)
     return {nid: {"x": float(xy[0]), "y": float(xy[1])} for nid, xy in pos.items()}
 
 
@@ -136,7 +137,8 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
 
     paper_db = PaperDB(db_path)
     all_papers = paper_db.find(summarized=True)
-    logger.info("Found %d summarized papers.", len(all_papers))
+    all_papers = [p for p in all_papers if "interest_score" in p and p["interest_score"] >= 5]
+    logger.info("Found %d scored papers with score >= 5.", len(all_papers))
 
     db_id_set = {p["id"] for p in all_papers}
 
