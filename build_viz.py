@@ -3,7 +3,7 @@
 
 Reads papers.json, fetches citations via Semantic Scholar (incrementally
 cached), computes author-overlap edges, pre-computes a ForceAtlas2 layout,
-and writes docs/viz/data/graph.json consumed by the static frontend.
+and writes docs/data/graph.json consumed by the static frontend.
 """
 
 import argparse
@@ -35,7 +35,7 @@ if not logger.handlers:
 
 DB_PATH = "papers.json"
 CACHE_PATH = "citations_cache.json"
-OUTPUT_PATH = "docs/viz/data/graph.json"
+OUTPUT_PATH = "docs/data/graph.json"
 
 
 # ---------------------------------------------------------------------------

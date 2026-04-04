@@ -33,15 +33,15 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
 
 | File | Role |
 |---|---|
-| [`deepthought.py`](../../deepthought.py) | Entry point & orchestrator. All config, prompts, search queries, and CLI flags live here. |
-| [`secnews/utils_search.py`](../../secnews/utils_search.py) | arXiv API queries with pagination, rate-limiting, and per-query cache (`search_state.json`, 1h TTL). |
-| [`secnews/utils_papers.py`](../../secnews/utils_papers.py) | Async bulk PDF download (`requests-futures`), PDF text extraction (`pypdf`). |
-| [`secnews/utils_summary.py`](../../secnews/utils_summary.py) | LLM summarization, relevance classification, and project-relevance classification. Includes anti-hallucination guard for affiliations. |
-| [`secnews/utils_db.py`](../../secnews/utils_db.py) | `PaperDB` — JSON-file-backed database (`papers.json`). In-memory list of dicts, flushed to disk on every write. |
-| [`secnews/utils_comms.py`](../../secnews/utils_comms.py) | Markdown + HTML formatting, `.md` and `.eml` file generation. |
-| [`secnews/utils_citations.py`](../../secnews/utils_citations.py) | Semantic Scholar citation fetcher with persistent JSON cache (`citations_cache.json`). Incremental: only queries S2 for papers not yet cached. |
-| [`build_viz.py`](../../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, pre-computes layout, and writes `docs/viz/data/graph.json`. |
-| [`projects.json`](../../projects.json) | Research project definitions (`id` + `description`) for project-relevance matching. |
+| [`deepthought.py`](../deepthought.py) | Entry point & orchestrator. All config, prompts, search queries, and CLI flags live here. |
+| [`secnews/utils_search.py`](../secnews/utils_search.py) | arXiv API queries with pagination, rate-limiting, and per-query cache (`search_state.json`, 1h TTL). |
+| [`secnews/utils_papers.py`](../secnews/utils_papers.py) | Async bulk PDF download (`requests-futures`), PDF text extraction (`pypdf`). |
+| [`secnews/utils_summary.py`](../secnews/utils_summary.py) | LLM summarization, relevance classification, and project-relevance classification. Includes anti-hallucination guard for affiliations. |
+| [`secnews/utils_db.py`](../secnews/utils_db.py) | `PaperDB` — JSON-file-backed database (`papers.json`). In-memory list of dicts, flushed to disk on every write. |
+| [`secnews/utils_comms.py`](../secnews/utils_comms.py) | Markdown + HTML formatting, `.md` and `.eml` file generation. |
+| [`secnews/utils_citations.py`](../secnews/utils_citations.py) | Semantic Scholar citation fetcher with persistent JSON cache (`citations_cache.json`). Incremental: only queries S2 for papers not yet cached. |
+| [`build_viz.py`](../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, pre-computes layout, and writes `docs/data/graph.json`. |
+| [`projects.json`](../projects.json) | Research project definitions (`id` + `description`) for project-relevance matching. |
 
 ## Paper Record Schema
 
@@ -130,12 +130,12 @@ python -m pytest tests/ -v -m e2e
 
 ## Interactive Graph Visualization
 
-A static interactive graph of all summarized papers, hosted via GitHub Pages under `docs/viz/`.
+A static interactive graph of all summarized papers, hosted via GitHub Pages under `docs/`.
 
 ### Architecture
 
 ```
-papers.json ──► build_viz.py ──► docs/viz/data/graph.json
+papers.json ──► build_viz.py ──► docs/data/graph.json
                     │
                     ├── reads papers.json (all summarized papers)
                     ├── fetches citations via Semantic Scholar batch API (cached in citations_cache.json)
@@ -143,7 +143,7 @@ papers.json ──► build_viz.py ──► docs/viz/data/graph.json
                     ├── pre-computes ForceAtlas2 layout (networkx spring_layout)
                     └── outputs single graph.json with nodes + two edge arrays + positions
 
-docs/viz/
+docs/
 ├── index.html          ← entry point (vanilla HTML, CDN deps)
 ├── css/style.css       ← light/dark themes with gradient accents
 ├── js/app.js           ← Sigma.js v3 + Graphology graph rendering
@@ -161,7 +161,7 @@ docs/viz/
 ### Data Flow
 - **`papers.json`** is read-only from the viz pipeline — never modified.
 - **`citations_cache.json`** is the persistent S2 API cache, committed to the repo. Incremental: only new paper IDs are fetched on each run.
-- **`docs/viz/data/graph.json`** is the final output consumed by the frontend.
+- **`docs/data/graph.json`** is the final output consumed by the frontend.
 
 ### Known Pitfalls (Viz)
 - **Semantic Scholar rate limits**: Free tier allows 100 req/5 min. For ~6K papers batched at 500/req, this is ~12 requests — well within limits. If rate-limited, set `S2_API_KEY` env var.
