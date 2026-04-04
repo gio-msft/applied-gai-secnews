@@ -21,7 +21,7 @@ from playwright.sync_api import sync_playwright  # noqa: E402
 
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VIZ_DIR = os.path.join(PROJECT_ROOT, "docs", "viz")
+VIZ_DIR = os.path.join(PROJECT_ROOT, "docs")
 SCREENSHOT_DIR = "/tmp/viz_screenshots"
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 

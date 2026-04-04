@@ -4,7 +4,7 @@ Requires:
     pip install pytest-playwright
     playwright install chromium
 
-Tests spin up a local HTTP server for docs/viz/ and exercise the graph UI.
+Tests spin up a local HTTP server for docs/ and exercise the graph UI.
 """
 
 import http.server
@@ -27,7 +27,7 @@ from playwright.sync_api import sync_playwright, expect  # noqa: E402
 # Paths
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VIZ_DIR = os.path.join(PROJECT_ROOT, "docs", "viz")
+VIZ_DIR = os.path.join(PROJECT_ROOT, "docs")
 
 # ---------------------------------------------------------------------------
 # Sample graph data — small enough for fast tests
