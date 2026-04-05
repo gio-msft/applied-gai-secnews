@@ -48,7 +48,25 @@ python deepthought.py --include-general
 
 # Skip the interactive review of borderline papers
 python deepthought.py --no-interactive
+
+# Run the full pipeline then build the interactive graph visualization
+python deepthought.py --build-viz
 ```
+
+### Graph Visualization
+
+```bash
+# Build the interactive paper graph (fetches citations + computes embeddings)
+python build_viz.py
+
+# Use cached citations only (skip Semantic Scholar queries)
+python build_viz.py --skip-citations
+
+# Skip embedding computation (no Azure OpenAI calls for embeddings)
+python build_viz.py --skip-citations --skip-embeddings
+```
+
+The graph is written to `docs/data/graph.json` and served by the static site in `docs/`. Embeddings are cached in `embeddings_cache.json` so subsequent runs only embed new papers.
 
 ## Pipeline
 
@@ -79,18 +97,23 @@ python -m pytest tests/ -v -m integration
 
 ```
 deepthought.py          # Entry point, config, prompts, CLI
+build_viz.py            # Graph visualization builder (citations, embeddings, layout)
 projects.json           # Research project definitions
 papers.json             # Paper database (auto-generated)
 search_state.json       # Search cache (auto-generated)
+embeddings_cache.json   # Paper embedding cache (auto-generated)
+citations_cache.json    # Semantic Scholar citation cache (auto-generated)
 papers/                 # Downloaded PDFs
 summaries/              # Generated .md and .eml output
+docs/                   # Interactive graph visualization (static site)
 secnews/
   utils_search.py       # arXiv search + caching
   utils_papers.py       # PDF download + text extraction
   utils_summary.py      # LLM summarization + classification
   utils_db.py           # PaperDB (JSON-file database)
   utils_comms.py        # Output formatting + file generation
+  utils_citations.py    # Semantic Scholar citation fetcher + cache
 tests/                  # Unit + integration tests
-docs/ai/
+ai/
   PROJECT_BRIEF.md      # Detailed architecture reference
 ```
