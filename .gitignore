@@ -192,3 +192,8 @@ papers/
 
 summaries/*.eml:OECustomProperty
 projects.json
+embeddings_cache.json
+
+screenshots/
+
+improvements.md

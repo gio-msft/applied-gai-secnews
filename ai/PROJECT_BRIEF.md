@@ -40,7 +40,7 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
 | [`secnews/utils_db.py`](../secnews/utils_db.py) | `PaperDB` — JSON-file-backed database (`papers.json`). In-memory list of dicts, flushed to disk on every write. |
 | [`secnews/utils_comms.py`](../secnews/utils_comms.py) | Markdown + HTML formatting, `.md` and `.eml` file generation. |
 | [`secnews/utils_citations.py`](../secnews/utils_citations.py) | Semantic Scholar citation fetcher with persistent JSON cache (`citations_cache.json`). Incremental: only queries S2 for papers not yet cached. |
-| [`build_viz.py`](../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, pre-computes layout, and writes `docs/data/graph.json`. |
+| [`build_viz.py`](../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, computes per-paper embeddings (cached in `embeddings_cache.json`), pre-computes layout, and writes `docs/data/graph.json`. |
 | [`projects.json`](../projects.json) | Research project definitions (`id` + `description`) for project-relevance matching. |
 
 ## Paper Record Schema
@@ -107,6 +107,9 @@ python build_viz.py --skip-citations
 
 # Build viz with fresh citation data from Semantic Scholar
 python build_viz.py
+
+# Build viz without embedding computation (no Azure OpenAI for embeddings)
+python build_viz.py --skip-citations --skip-embeddings
 
 # Build viz as part of the main pipeline run
 python deepthought.py --build-viz

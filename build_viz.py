@@ -16,12 +16,18 @@ from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
+import dotenv
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from openai import AzureOpenAI
+
 from secnews.utils_citations import (
     build_citation_edges,
     fetch_citations,
     load_cache,
 )
 from secnews.utils_db import PaperDB
+
+dotenv.load_dotenv(".env")
 
 logger = logging.getLogger("AIRT-GAI-SecNews")
 logger.setLevel(logging.DEBUG)
@@ -36,6 +42,66 @@ if not logger.handlers:
 DB_PATH = "papers.json"
 CACHE_PATH = "citations_cache.json"
 OUTPUT_PATH = "docs/data/graph.json"
+EMBEDDING_DEPLOYMENT = "text-embedding-3-small"
+EMBEDDING_CACHE_PATH = "embeddings_cache.json"
+EMBEDDING_BATCH_SIZE = 2048  # max inputs per API call
+
+
+# ---------------------------------------------------------------------------
+# Embedding helpers
+# ---------------------------------------------------------------------------
+
+def _make_oai_client():
+    """Create an AzureOpenAI client using DefaultAzureCredential."""
+    credential = DefaultAzureCredential()
+    token_provider = get_bearer_token_provider(
+        credential, "https://cognitiveservices.azure.com/.default"
+    )
+    return AzureOpenAI(
+        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+        azure_ad_token_provider=token_provider,
+        api_version="2025-01-01-preview",
+    )
+
+
+def _paper_text(paper):
+    """Build the text string used as embedding input for a paper."""
+    title = paper.get("title", "")
+    one_liner = paper.get("one_liner", "")
+    points = " ".join(paper.get("points", []))
+    return f"{title}. {one_liner}. {points}"
+
+
+def compute_embeddings(papers, oai_client, cache_path=EMBEDDING_CACHE_PATH):
+    """Return ``{paper_id: [float, …]}`` using cached + incremental API calls.
+
+    Only papers whose IDs are missing from the cache are sent to the API.
+    The cache file is updated on disk after new embeddings are fetched.
+    """
+    cache = (
+        json.loads(Path(cache_path).read_text())
+        if Path(cache_path).exists()
+        else {}
+    )
+    missing = [p for p in papers if p["id"] not in cache]
+    if missing:
+        logger.info("Computing embeddings for %d new papers (%d cached).",
+                    len(missing), len(cache))
+        texts = [_paper_text(p) for p in missing]
+        # Chunk into batches of EMBEDDING_BATCH_SIZE
+        for i in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            batch_texts = texts[i : i + EMBEDDING_BATCH_SIZE]
+            batch_papers = missing[i : i + EMBEDDING_BATCH_SIZE]
+            resp = oai_client.embeddings.create(
+                model=EMBEDDING_DEPLOYMENT, input=batch_texts,
+            )
+            for p, emb in zip(batch_papers, resp.data):
+                cache[p["id"]] = emb.embedding
+        Path(cache_path).write_text(json.dumps(cache))
+        logger.info("Embedding cache updated — %d total entries.", len(cache))
+    else:
+        logger.info("All %d embeddings cached; no API calls needed.", len(cache))
+    return cache
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +198,8 @@ def _compute_layout(nodes, citation_edges, author_edges):
 # ---------------------------------------------------------------------------
 
 def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
-                skip_citations=False, force_citations=False):
+                skip_citations=False, force_citations=False,
+                skip_embeddings=False, embedding_cache_path=EMBEDDING_CACHE_PATH):
     """Build the graph JSON and write to *output_path*."""
 
     paper_db = PaperDB(db_path)
@@ -160,6 +227,14 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
     # --- Author edges ---
     author_edges = build_author_edges(all_papers)
     logger.info("Author-overlap edges: %d", len(author_edges))
+
+    # --- Embeddings (shared infrastructure for topic regions + similarity) ---
+    embeddings = None
+    if not skip_embeddings:
+        oai_client = _make_oai_client()
+        embeddings = compute_embeddings(
+            all_papers, oai_client, cache_path=embedding_cache_path,
+        )
 
     # --- Layout ---
     positions = _compute_layout(all_papers, citation_edges, author_edges)
@@ -220,6 +295,14 @@ if __name__ == "__main__":
         help="Re-fetch all citations regardless of what is cached.",
     )
     parser.add_argument(
+        "--skip-embeddings", action="store_true",
+        help="Skip embedding computation (no Azure OpenAI calls for embeddings).",
+    )
+    parser.add_argument(
+        "--embedding-cache-path", default=EMBEDDING_CACHE_PATH,
+        help="Path to embeddings cache (default: %(default)s).",
+    )
+    parser.add_argument(
         "--db-path", default=DB_PATH,
         help="Path to papers.json (default: %(default)s).",
     )
@@ -239,4 +322,6 @@ if __name__ == "__main__":
         output_path=args.output_path,
         skip_citations=args.skip_citations,
         force_citations=args.force_citations,
+        skip_embeddings=args.skip_embeddings,
+        embedding_cache_path=args.embedding_cache_path,
     )
