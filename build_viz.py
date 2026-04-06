@@ -16,6 +16,8 @@ from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
+import numpy as np
+
 import dotenv
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
@@ -42,9 +44,33 @@ if not logger.handlers:
 DB_PATH = "papers.json"
 CACHE_PATH = "citations_cache.json"
 OUTPUT_PATH = "docs/data/graph.json"
-EMBEDDING_DEPLOYMENT = "text-embedding-3-small"
+EMBEDDING_DEPLOYMENT = "text-embedding-3-large"
 EMBEDDING_CACHE_PATH = "embeddings_cache.json"
 EMBEDDING_BATCH_SIZE = 2048  # max inputs per API call
+HDBSCAN_MIN_CLUSTER_SIZE = 3
+PCA_COMPONENTS = 30
+HDBSCAN_MIN_SAMPLES = 2
+SIMILARITY_THRESHOLD = 0.55
+SIMILARITY_MAX_K = 5
+
+# 15-color palette for topic regions (light/dark variants)
+CLUSTER_COLORS = [
+    {"light": "#4f6df5", "dark": "#6b8aff"},
+    {"light": "#e67e22", "dark": "#f5a623"},
+    {"light": "#27ae60", "dark": "#2ecc71"},
+    {"light": "#e74c3c", "dark": "#ff6b6b"},
+    {"light": "#9b59b6", "dark": "#bb86fc"},
+    {"light": "#1abc9c", "dark": "#4fd1c5"},
+    {"light": "#f39c12", "dark": "#fbbf24"},
+    {"light": "#3498db", "dark": "#63b3ed"},
+    {"light": "#e91e63", "dark": "#f48fb1"},
+    {"light": "#00bcd4", "dark": "#4dd0e1"},
+    {"light": "#8bc34a", "dark": "#aed581"},
+    {"light": "#ff5722", "dark": "#ff8a65"},
+    {"light": "#607d8b", "dark": "#90a4ae"},
+    {"light": "#795548", "dark": "#a1887f"},
+    {"light": "#673ab7", "dark": "#9575cd"},
+]
 
 
 # ---------------------------------------------------------------------------
@@ -158,12 +184,304 @@ def build_author_edges(papers):
 
 
 # ---------------------------------------------------------------------------
-# Layout — pre-compute with graphology-like ForceAtlas2 via networkx spring
+# Topic clustering
 # ---------------------------------------------------------------------------
 
-def _compute_layout(nodes, citation_edges, author_edges):
+def compute_topic_clusters(papers, embeddings, oai_client):
+    """Cluster papers by embedding similarity and generate LLM labels.
+
+    Returns a list of cluster dicts::
+
+        [{"id": 0, "label": "...", "color": {"light": ..., "dark": ...},
+          "papers": [paper_id, ...]}, ...]
+
+    Also returns a dict mapping paper_id → cluster_id (or -1 for noise).
+    """
+    from sklearn.cluster import HDBSCAN
+    from sklearn.decomposition import PCA
+
+    paper_ids = [p["id"] for p in papers]
+    matrix = np.array([embeddings[pid] for pid in paper_ids])
+
+    # Dimensionality reduction
+    n_components = min(PCA_COMPONENTS, len(paper_ids) - 1, matrix.shape[1])
+    if n_components > 1:
+        pca = PCA(n_components=n_components, random_state=42)
+        reduced = pca.fit_transform(matrix)
+        logger.info("PCA: %d dims → %d (%.1f%% variance retained).",
+                    matrix.shape[1], n_components,
+                    pca.explained_variance_ratio_.sum() * 100)
+    else:
+        reduced = matrix
+
+    # Clustering
+    clusterer = HDBSCAN(
+        min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE,
+        min_samples=HDBSCAN_MIN_SAMPLES,
+    )
+    labels = clusterer.fit_predict(reduced)
+    unique_labels = sorted(int(l) for l in set(labels) - {-1})
+    logger.info("HDBSCAN found %d clusters (%d noise papers).",
+                len(unique_labels), int((labels == -1).sum()))
+
+    # Build cluster membership
+    paper_cluster = {}  # paper_id → cluster_id
+    cluster_papers = defaultdict(list)  # cluster_id → [paper_id]
+    for pid, lbl in zip(paper_ids, labels):
+        paper_cluster[pid] = int(lbl)
+        if lbl != -1:
+            cluster_papers[int(lbl)].append(pid)
+
+    # Build paper lookup for label generation
+    paper_by_id = {p["id"]: p for p in papers}
+
+    # Generate LLM labels for each cluster
+    clusters = []
+    for i, cid in enumerate(unique_labels):
+        members = cluster_papers[cid]
+        color = CLUSTER_COLORS[i % len(CLUSTER_COLORS)]
+
+        # Build text summary for LLM
+        sample_texts = []
+        for pid in members[:20]:  # cap at 20 to keep prompt short
+            p = paper_by_id[pid]
+            sample_texts.append(f"- {p.get('title', pid)}: {p.get('one_liner', '')}")
+        sample_block = "\n".join(sample_texts)
+
+        label = _generate_cluster_label(oai_client, sample_block)
+        logger.info("Cluster %d (%d papers): %s", cid, len(members), label)
+
+        clusters.append({
+            "id": cid,
+            "label": label,
+            "color": color,
+            "papers": members,
+        })
+
+    return clusters, paper_cluster
+
+
+def _generate_cluster_label(oai_client, sample_block):
+    """Ask the LLM for a short topic label given paper summaries."""
+    resp = oai_client.chat.completions.create(
+        model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
+        messages=[
+            {"role": "system", "content": (
+                "You are a research librarian. Given paper titles and summaries "
+                "from a single thematic cluster, produce a short topic label "
+                "(2-5 words). Return ONLY the label, nothing else."
+            )},
+            {"role": "user", "content": sample_block},
+        ],
+        max_completion_tokens=20,
+        temperature=0.3,
+    )
+    return resp.choices[0].message.content.strip().strip('"').strip("'")
+
+
+# ---------------------------------------------------------------------------
+# Similarity edges
+# ---------------------------------------------------------------------------
+
+def compute_similarity_edges(papers, embeddings,
+                             threshold=SIMILARITY_THRESHOLD,
+                             max_k=SIMILARITY_MAX_K):
+    """Compute pairwise cosine similarity and return top-k edges.
+
+    Returns a list of ``{"source", "target", "weight"}`` dicts.
+    """
+    from sklearn.metrics.pairwise import cosine_similarity
+
+    paper_ids = [p["id"] for p in papers]
+    matrix = np.array([embeddings[pid] for pid in paper_ids])
+    sim_matrix = cosine_similarity(matrix)
+
+    edges = []
+    seen = set()
+    for i, pid_a in enumerate(paper_ids):
+        # Get top-k indices (excluding self)
+        row = sim_matrix[i].copy()
+        row[i] = -1  # exclude self
+        top_indices = np.argsort(row)[::-1][:max_k]
+        for j in top_indices:
+            if row[j] < threshold:
+                continue
+            pid_b = paper_ids[j]
+            pair = tuple(sorted((pid_a, pid_b)))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            edges.append({
+                "source": pid_a,
+                "target": pid_b,
+                "weight": round(float(row[j]), 4),
+            })
+
+    logger.info("Similarity edges: %d (threshold=%.2f, max_k=%d).",
+                len(edges), threshold, max_k)
+    return edges
+
+
+# ---------------------------------------------------------------------------
+# Convex hull computation for topic regions
+# ---------------------------------------------------------------------------
+
+def compute_hulls(clusters, positions, pad=0.02):
+    """Compute concave hulls (alpha shapes) for each cluster.
+
+    Uses Delaunay triangulation to create a tight boundary that avoids
+    enveloping distant outlier points — much less overlap than convex hulls.
+
+    *positions* is ``{paper_id: {"x": float, "y": float}}``.
+    *pad* expands each hull vertex outward from the centroid.
+
+    Mutates each cluster dict in-place, adding ``"hull"`` and
+    ``"centroid"`` keys.  Clusters with <3 members get no hull.
+    """
+    from scipy.spatial import ConvexHull, Delaunay
+
+    for cluster in clusters:
+        members = cluster["papers"]
+        pts = np.array([
+            [positions[pid]["x"], positions[pid]["y"]]
+            for pid in members if pid in positions
+        ])
+        if len(pts) < 3:
+            cluster["hull"] = []
+            cx = float(pts[:, 0].mean()) if len(pts) > 0 else 0.0
+            cy = float(pts[:, 1].mean()) if len(pts) > 0 else 0.0
+            cluster["centroid"] = [cx, cy]
+            continue
+
+        centroid = pts.mean(axis=0)
+
+        try:
+            hull_pts = _concave_hull(pts)
+        except Exception:
+            # Fallback to convex hull
+            try:
+                hull = ConvexHull(pts)
+                hull_pts = pts[hull.vertices]
+            except Exception:
+                cluster["hull"] = []
+                cluster["centroid"] = [float(centroid[0]), float(centroid[1])]
+                continue
+
+        # Pad outward from centroid
+        padded = []
+        for pt in hull_pts:
+            direction = pt - centroid
+            norm = np.linalg.norm(direction)
+            if norm > 0:
+                pt = pt + direction / norm * pad
+            padded.append([round(float(pt[0]), 6), round(float(pt[1]), 6)])
+
+        cluster["hull"] = padded
+        cluster["centroid"] = [round(float(centroid[0]), 6),
+                               round(float(centroid[1]), 6)]
+
+
+def _concave_hull(points, alpha_mult=1.5):
+    """Return an ordered boundary of a concave hull (alpha shape).
+
+    *alpha_mult* controls tightness: lower = tighter wrap.
+    Falls back to convex hull if alpha shape fails.
+    """
+    from scipy.spatial import Delaunay, ConvexHull
+    from collections import defaultdict
+
+    tri = Delaunay(points)
+
+    # Compute alpha as a multiple of the mean edge length
+    edges_all = set()
+    edge_lengths = []
+    for simplex in tri.simplices:
+        for i in range(3):
+            a, b = simplex[i], simplex[(i + 1) % 3]
+            edge = (min(a, b), max(a, b))
+            if edge not in edges_all:
+                edges_all.add(edge)
+                edge_lengths.append(np.linalg.norm(
+                    points[a] - points[b]))
+    mean_len = np.mean(edge_lengths)
+    alpha = alpha_mult * mean_len
+
+    # Keep only triangles whose longest edge is shorter than alpha
+    boundary_edges = defaultdict(int)
+    for simplex in tri.simplices:
+        verts = [simplex[0], simplex[1], simplex[2]]
+        lens = [
+            np.linalg.norm(points[verts[i]] - points[verts[(i+1) % 3]])
+            for i in range(3)
+        ]
+        if max(lens) <= alpha:
+            # All edges of this triangle are boundary candidates
+            for i in range(3):
+                edge = (min(verts[i], verts[(i+1) % 3]),
+                        max(verts[i], verts[(i+1) % 3]))
+                boundary_edges[edge] += 1
+
+    # Boundary edges appear in exactly one kept triangle
+    outline = [e for e, count in boundary_edges.items() if count == 1]
+    if not outline:
+        # Alpha too tight — fall back to convex
+        hull = ConvexHull(points)
+        return points[hull.vertices]
+
+    # Order the boundary edges into a polygon
+    adj = defaultdict(list)
+    for a, b in outline:
+        adj[a].append(b)
+        adj[b].append(a)
+
+    ordered = [outline[0][0]]
+    visited = {outline[0][0]}
+    while True:
+        current = ordered[-1]
+        nexts = [n for n in adj[current] if n not in visited]
+        if not nexts:
+            break
+        ordered.append(nexts[0])
+        visited.add(nexts[0])
+
+    return points[ordered]
+
+
+# ---------------------------------------------------------------------------
+# Layout
+# ---------------------------------------------------------------------------
+
+def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43):
+    """Compute 2D positions via UMAP on the embedding vectors."""
+    from umap import UMAP
+
+    ids = [n["id"] for n in nodes]
+    matrix = np.array([embeddings[pid] for pid in ids])
+
+    logger.info("Running UMAP on %d × %d embedding matrix…", *matrix.shape)
+    reducer = UMAP(
+        n_components=2,
+        min_dist=min_dist,
+        spread=spread,
+        metric="cosine",
+        random_state=seed,
+    )
+    coords = reducer.fit_transform(matrix)
+
+    # Normalise to [-1, 1]
+    for dim in range(2):
+        lo, hi = coords[:, dim].min(), coords[:, dim].max()
+        if hi - lo > 0:
+            coords[:, dim] = 2 * (coords[:, dim] - lo) / (hi - lo) - 1
+
+    return {pid: {"x": float(coords[i, 0]), "y": float(coords[i, 1])}
+            for i, pid in enumerate(ids)}
+
+
+def _compute_layout(nodes, edge_sets, k=1.5, iterations=200, seed=42):
     """Compute (x, y) positions via a spring layout.
 
+    *edge_sets* is a list of ``(edges, weight_multiplier)`` tuples.
     Uses networkx spring_layout as a lightweight alternative to FA2.
     Falls back to random positions if networkx is not available.
     """
@@ -173,23 +491,25 @@ def _compute_layout(nodes, citation_edges, author_edges):
         logger.warning("networkx not installed; using random layout. "
                        "Install networkx for better layout quality.")
         import random
-        random.seed(42)
+        random.seed(seed)
         return {n["id"]: {"x": random.uniform(-1, 1),
                           "y": random.uniform(-1, 1)} for n in nodes}
 
     G = nx.Graph()
     for n in nodes:
         G.add_node(n["id"])
-    # Combine both edge sets for layout computation
-    for e in citation_edges:
-        G.add_edge(e["source"], e["target"], weight=1)
-    for e in author_edges:
-        G.add_edge(e["source"], e["target"], weight=e.get("weight", 1))
+    for edges, multiplier in edge_sets:
+        for e in edges:
+            w = e.get("weight", 1) * multiplier
+            src, tgt = e["source"], e["target"]
+            if G.has_edge(src, tgt):
+                G[src][tgt]["weight"] = G[src][tgt].get("weight", 0) + w
+            else:
+                G.add_edge(src, tgt, weight=w)
 
     logger.info("Computing layout for %d nodes, %d edges…",
                 G.number_of_nodes(), G.number_of_edges())
-    # High k value spreads disconnected nodes; many iterations settle connected clusters
-    pos = nx.spring_layout(G, k=1.5, iterations=200, seed=42)
+    pos = nx.spring_layout(G, k=k, iterations=iterations, seed=seed)
     return {nid: {"x": float(xy[0]), "y": float(xy[1])} for nid, xy in pos.items()}
 
 
@@ -236,13 +556,40 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
             all_papers, oai_client, cache_path=embedding_cache_path,
         )
 
-    # --- Layout ---
-    positions = _compute_layout(all_papers, citation_edges, author_edges)
+    # --- Semantic features (require embeddings) ---
+    similarity_edges = []
+    topic_regions = []
+    paper_cluster = {}  # paper_id → cluster_id
+    semantic_positions = {}  # paper_id → {x, y}
+
+    if embeddings:
+        # Topic clusters
+        topic_regions, paper_cluster = compute_topic_clusters(
+            all_papers, embeddings, oai_client,
+        )
+        # Similarity edges
+        similarity_edges = compute_similarity_edges(all_papers, embeddings)
+
+    # --- Layout (structural: citations + authors) ---
+    positions = _compute_layout(all_papers, [
+        (citation_edges, 1.0),
+        (author_edges, 1.0),
+    ])
+
+    # --- Semantic layout (UMAP on embedding vectors) ---
+    if embeddings:
+        semantic_positions = _compute_umap_layout(all_papers, embeddings)
+
+        # Compute convex hulls using semantic positions
+        compute_hulls(topic_regions, semantic_positions)
+    else:
+        semantic_positions = positions  # fallback: same as structural
 
     # --- Build nodes ---
     nodes = []
     for p in all_papers:
         pos = positions.get(p["id"], {"x": 0, "y": 0})
+        sem = semantic_positions.get(p["id"], pos)
         nodes.append({
             "id": p["id"],
             "title": p.get("title", p["id"]),
@@ -259,12 +606,17 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
             "relevant": p.get("relevant", False),
             "x": pos["x"],
             "y": pos["y"],
+            "semantic_x": sem["x"],
+            "semantic_y": sem["y"],
+            "cluster": paper_cluster.get(p["id"], -1),
         })
 
     graph = {
         "nodes": nodes,
         "citation_edges": citation_edges,
         "author_edges": author_edges,
+        "similarity_edges": similarity_edges,
+        "topic_regions": topic_regions,
     }
 
     # Ensure output directory exists
@@ -272,8 +624,12 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(graph))
     size_mb = out.stat().st_size / (1024 * 1024)
-    logger.info("Wrote %s (%.1f MB) — %d nodes, %d citation edges, %d author edges.",
-                output_path, size_mb, len(nodes), len(citation_edges), len(author_edges))
+    logger.info(
+        "Wrote %s (%.1f MB) — %d nodes, %d citation, %d author, "
+        "%d similarity edges, %d topic regions.",
+        output_path, size_mb, len(nodes), len(citation_edges),
+        len(author_edges), len(similarity_edges), len(topic_regions),
+    )
 
     return graph
 

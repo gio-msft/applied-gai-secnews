@@ -1,5 +1,7 @@
 # Copilot instructions (repo-wide)
 
+- Use the conda env called `papers`
+
 ## Always start from the Project Brief
 - Treat ai/PROJECT_BRIEF.md as the primary project context.
 - Do NOT do a full repo exploration unless:

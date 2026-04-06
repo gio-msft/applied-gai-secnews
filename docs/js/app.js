@@ -16,6 +16,7 @@
   const EDGE_COLORS = {
     citations: { light: "rgba(70,70,160,0.5)",   dark: "rgba(140,160,255,0.35)" },
     authors:   { light: "rgba(160,70,70,0.5)",    dark: "rgba(255,160,140,0.45)" },
+    semantic:  { light: "rgba(40,160,80,0.5)",     dark: "rgba(100,220,140,0.4)"  },
   };
 
   const MIN_NODE_SIZE = 1.5;
@@ -28,6 +29,9 @@
   let renderer = null;
   let activeLayer = "citations";
   let highlightedNode = null;
+  var originalPositions = {};  // paper_id → {x, y}
+  var semanticPositions = {};  // paper_id → {x, y}
+  var animatingLayout = false;
   let selectedNode = null;
   let draggedNode = null;
   let isDragging = false;
@@ -63,6 +67,17 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       graphData = data;
+      // Pre-compute dual position sets
+      graphData.nodes.forEach(function (n) {
+        originalPositions[n.id] = {
+          x: (n.x || 0) * SCALE_FACTOR,
+          y: (n.y || 0) * SCALE_FACTOR,
+        };
+        semanticPositions[n.id] = {
+          x: (n.semantic_x != null ? n.semantic_x : n.x || 0) * SCALE_FACTOR,
+          y: (n.semantic_y != null ? n.semantic_y : n.y || 0) * SCALE_FACTOR,
+        };
+      });
       initGraph();
       loadingOverlay.style.display = "none";
     })
@@ -309,6 +324,13 @@
 
     renderer.setSetting("edgeReducer", function (edge, data) {
       var res = Object.assign({}, data);
+      // In semantic mode, hide ALL edges unless a node is hovered/selected
+      if (activeLayer === "semantic") {
+        if (!highlightedNode && !selectedNode) {
+          res.hidden = true;
+          return res;
+        }
+      }
       if (highlightedNode) {
         var src = graph.source(edge);
         var tgt = graph.target(edge);
@@ -329,12 +351,17 @@
     // Keep selection ring in sync with camera movement
     renderer.on("afterRender", function () {
       if (selectedNode) updateSelectionRing();
+      drawHulls();
     });
   }
 
   // --- Edge management -----------------------------------------------------
   function addEdges(layer) {
-    var edges = layer === "citations" ? graphData.citation_edges : graphData.author_edges;
+    var edges;
+    if (layer === "citations") edges = graphData.citation_edges;
+    else if (layer === "authors") edges = graphData.author_edges;
+    else if (layer === "semantic") edges = graphData.similarity_edges || [];
+    else edges = [];
     var theme = currentTheme();
     var color = EDGE_COLORS[layer][theme];
 
@@ -344,7 +371,10 @@
       // Avoid duplicate edges
       if (graph.hasEdge(e.source, e.target)) return;
 
-      var size = layer === "authors" ? Math.min((e.weight || 1) * 0.8, 5) : 0.5;
+      var size;
+      if (layer === "authors") size = Math.min((e.weight || 1) * 0.8, 5);
+      else if (layer === "semantic") size = Math.min((e.weight || 0.5) * 2, 3);
+      else size = 0.5;
       graph.addEdge(e.source, e.target, {
         color: color,
         size: size,
@@ -359,11 +389,164 @@
 
   function switchLayer(layer) {
     if (layer === activeLayer) return;
+    var prevLayer = activeLayer;
     activeLayer = layer;
     clearEdges();
     addEdges(layer);
     renderer.setSetting("defaultEdgeType", "line");
-    renderer.refresh();
+
+    // Animate positions when switching to/from semantic mode
+    var targetPositions;
+    if (layer === "semantic") {
+      targetPositions = semanticPositions;
+    } else if (prevLayer === "semantic") {
+      targetPositions = originalPositions;
+    }
+    if (targetPositions) {
+      animatePositions(targetPositions, 600);
+    } else {
+      renderer.refresh();
+    }
+
+    // Hull overlay
+    drawHulls();
+  }
+
+  // --- Position animation --------------------------------------------------
+  function animatePositions(target, duration) {
+    if (animatingLayout) return;
+    animatingLayout = true;
+    var start = {};
+    graph.forEachNode(function (node) {
+      start[node] = {
+        x: graph.getNodeAttribute(node, "x"),
+        y: graph.getNodeAttribute(node, "y"),
+      };
+    });
+    var t0 = performance.now();
+    function step(now) {
+      var progress = Math.min((now - t0) / duration, 1);
+      // ease-in-out
+      var ease = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+      graph.forEachNode(function (node) {
+        var s = start[node];
+        var t = target[node];
+        if (!s || !t) return;
+        graph.setNodeAttribute(node, "x", s.x + (t.x - s.x) * ease);
+        graph.setNodeAttribute(node, "y", s.y + (t.y - s.y) * ease);
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        animatingLayout = false;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // --- Hull rendering (topic region overlays) ------------------------------
+  var hullCanvas = document.getElementById("hull-canvas");
+  var hullCtx = hullCanvas ? hullCanvas.getContext("2d") : null;
+
+  /**
+   * Draw a smooth closed curve through an array of {x,y} points
+   * using Catmull-Rom → cubic Bézier conversion.
+   */
+  function drawSmoothClosed(ctx, pts) {
+    var n = pts.length;
+    if (n < 3) return;
+    var tension = 0.35; // 0 = sharp, 1 = very round
+    ctx.beginPath();
+
+    for (var i = 0; i < n; i++) {
+      var p0 = pts[(i - 1 + n) % n];
+      var p1 = pts[i];
+      var p2 = pts[(i + 1) % n];
+      var p3 = pts[(i + 2) % n];
+
+      var cp1x = p1.x + (p2.x - p0.x) * tension;
+      var cp1y = p1.y + (p2.y - p0.y) * tension;
+      var cp2x = p2.x - (p3.x - p1.x) * tension;
+      var cp2y = p2.y - (p3.y - p1.y) * tension;
+
+      if (i === 0) ctx.moveTo(p1.x, p1.y);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+    ctx.closePath();
+  }
+
+  function drawHulls() {
+    if (!hullCtx || !renderer) return;
+    // Resize canvas to match viewport
+    var rect = container.getBoundingClientRect();
+    hullCanvas.width = rect.width * (window.devicePixelRatio || 1);
+    hullCanvas.height = rect.height * (window.devicePixelRatio || 1);
+    hullCanvas.style.width = rect.width + "px";
+    hullCanvas.style.height = rect.height + "px";
+    hullCtx.setTransform(window.devicePixelRatio || 1, 0, 0,
+                         window.devicePixelRatio || 1, 0, 0);
+    hullCtx.clearRect(0, 0, rect.width, rect.height);
+
+    if (activeLayer !== "semantic") return;
+
+    var regions = graphData.topic_regions || [];
+    var theme = currentTheme();
+
+    regions.forEach(function (region) {
+      if (!region.hull || region.hull.length < 3) return;
+      var color = theme === "dark" ? region.color.dark : region.color.light;
+
+      // Transform hull points from graph coords to viewport
+      var viewPts = region.hull.map(function (pt) {
+        return renderer.graphToViewport({
+          x: pt[0] * SCALE_FACTOR,
+          y: pt[1] * SCALE_FACTOR,
+        });
+      });
+
+      // Expand hull outward from centroid for padding
+      var cx = 0, cy = 0;
+      viewPts.forEach(function (p) { cx += p.x; cy += p.y; });
+      cx /= viewPts.length; cy /= viewPts.length;
+      var PAD = 10; // px padding around hull
+      var padded = viewPts.map(function (p) {
+        var dx = p.x - cx, dy = p.y - cy;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        return { x: p.x + (dx / d) * PAD, y: p.y + (dy / d) * PAD };
+      });
+
+      // Draw smooth closed Catmull-Rom spline through padded hull
+      drawSmoothClosed(hullCtx, padded);
+      hullCtx.fillStyle = hexToRgba(color, 0.07);
+      hullCtx.fill();
+      hullCtx.strokeStyle = hexToRgba(color, 0.25);
+      hullCtx.lineWidth = 1.5;
+      hullCtx.stroke();
+
+      // Draw label at centroid
+      if (region.centroid) {
+        var cView = renderer.graphToViewport({
+          x: region.centroid[0] * SCALE_FACTOR,
+          y: region.centroid[1] * SCALE_FACTOR,
+        });
+        hullCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
+        hullCtx.textAlign = "center";
+        hullCtx.textBaseline = "middle";
+        hullCtx.fillStyle = hexToRgba(color, 0.7);
+        hullCtx.fillText(region.label, cView.x, cView.y);
+      }
+    });
+  }
+
+  function hexToRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
   }
 
   function refreshEdgeColors() {
@@ -481,6 +664,50 @@
       if (e.target === data.id) authorNeighbors.push(e.source);
     });
     buildLinkedSection("card-linked-authors", "Shared Authors", authorNeighbors);
+
+    // Collect similarity neighbors from graphData edges (always shown, all modes)
+    var similarNeighbors = [];
+    (graphData.similarity_edges || []).forEach(function (e) {
+      if (e.source === data.id) similarNeighbors.push({ id: e.target, w: e.weight });
+      if (e.target === data.id) similarNeighbors.push({ id: e.source, w: e.weight });
+    });
+    similarNeighbors.sort(function (a, b) { return b.w - a.w; });
+    similarNeighbors = similarNeighbors.slice(0, 5);
+
+    // Build similar section with scores
+    var simEl = document.getElementById("card-linked-similar");
+    simEl.innerHTML = "";
+    if (similarNeighbors.length > 0) {
+      var h = document.createElement("h3");
+      h.className = "card-linked-heading";
+      h.textContent = "Similar Papers (" + similarNeighbors.length + ")";
+      simEl.appendChild(h);
+      var list = document.createElement("ul");
+      list.className = "card-linked-list";
+      similarNeighbors.forEach(function (item) {
+        if (!graph.hasNode(item.id)) return;
+        var nData = graph.getNodeAttribute(item.id, "_data");
+        var li = document.createElement("li");
+        var link = document.createElement("a");
+        link.href = "#";
+        link.className = "card-linked-item";
+        link.textContent = (nData.emoji || "") + " " + (nData.title || item.id);
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          showCard(nData);
+          highlightNode(item.id);
+          var pos = renderer.getNodeDisplayData(item.id);
+          renderer.getCamera().animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
+        });
+        li.appendChild(link);
+        var score = document.createElement("span");
+        score.className = "card-similarity-score";
+        score.textContent = " (similarity: " + item.w.toFixed(2) + ")";
+        li.appendChild(score);
+        list.appendChild(li);
+      });
+      simEl.appendChild(list);
+    }
 
     cardPanel.classList.remove("hidden");
   }

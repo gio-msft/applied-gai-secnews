@@ -249,6 +249,17 @@ html, body {
   display: inline-block;
 }
 
+/* --- Hull canvas (topic region overlays) --------------------------------- */
+#hull-canvas {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;        /* sits behind graph-container */
+  pointer-events: none;
+}
+
 /* --- Graph container ----------------------------------------------------- */
 #graph-container {
   position: fixed;
@@ -513,6 +524,12 @@ html, body {
 
 .card-linked-item:hover {
   opacity: 0.7;
+}
+
+.card-similarity-score {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 #card-date {
