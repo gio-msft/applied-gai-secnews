@@ -501,31 +501,73 @@
   var labelCanvas = document.getElementById("label-canvas");
   var labelCtx = labelCanvas ? labelCanvas.getContext("2d") : null;
 
-  /**
-   * Draw a smooth closed curve through an array of {x,y} points
-   * using Catmull-Rom → cubic Bézier conversion.
-   */
-  function drawSmoothClosed(ctx, pts) {
-    var n = pts.length;
-    if (n < 3) return;
-    var tension = 0.35; // 0 = sharp, 1 = very round
-    ctx.beginPath();
+  // --- Dynamic convex-hull helpers ----------------------------------------
+  var HULL_PADDING = 0.04 * SCALE_FACTOR; // match build_viz.py radius
+  var HULL_CIRCLE_PTS = 12; // sample points per node circle
 
-    for (var i = 0; i < n; i++) {
-      var p0 = pts[(i - 1 + n) % n];
-      var p1 = pts[i];
-      var p2 = pts[(i + 1) % n];
-      var p3 = pts[(i + 2) % n];
+  function _cross2d(O, A, B) {
+    return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+  }
 
-      var cp1x = p1.x + (p2.x - p0.x) * tension;
-      var cp1y = p1.y + (p2.y - p0.y) * tension;
-      var cp2x = p2.x - (p3.x - p1.x) * tension;
-      var cp2y = p2.y - (p3.y - p1.y) * tension;
-
-      if (i === 0) ctx.moveTo(p1.x, p1.y);
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  /** Andrew's monotone-chain convex hull. */
+  function _convexHull(points) {
+    if (points.length <= 2) return points.slice();
+    var sorted = points.slice().sort(function (a, b) {
+      return a.x - b.x || a.y - b.y;
+    });
+    var lower = [];
+    for (var i = 0; i < sorted.length; i++) {
+      while (lower.length >= 2 &&
+             _cross2d(lower[lower.length - 2], lower[lower.length - 1], sorted[i]) <= 0)
+        lower.pop();
+      lower.push(sorted[i]);
     }
-    ctx.closePath();
+    var upper = [];
+    for (var i = sorted.length - 1; i >= 0; i--) {
+      while (upper.length >= 2 &&
+             _cross2d(upper[upper.length - 2], upper[upper.length - 1], sorted[i]) <= 0)
+        upper.pop();
+      upper.push(sorted[i]);
+    }
+    lower.pop();
+    upper.pop();
+    return lower.concat(upper);
+  }
+
+  /**
+   * Compute a smooth rounded hull for a cluster from live node positions.
+   * Places HULL_CIRCLE_PTS sample points on a circle of HULL_PADDING around
+   * each node, then takes the convex hull — similar to Shapely's
+   * Point.buffer() + unary_union().
+   */
+  function _computeLiveHull(paperIds) {
+    var expanded = [];
+    paperIds.forEach(function (id) {
+      if (!graph.hasNode(id)) return;
+      var x = graph.getNodeAttribute(id, "x");
+      var y = graph.getNodeAttribute(id, "y");
+      for (var i = 0; i < HULL_CIRCLE_PTS; i++) {
+        var angle = (2 * Math.PI * i) / HULL_CIRCLE_PTS;
+        expanded.push({
+          x: x + Math.cos(angle) * HULL_PADDING,
+          y: y + Math.sin(angle) * HULL_PADDING,
+        });
+      }
+    });
+    if (expanded.length < 3) return null;
+    return _convexHull(expanded);
+  }
+
+  /** Centroid of cluster nodes from their current graph positions. */
+  function _liveRegionCentroid(paperIds) {
+    var cx = 0, cy = 0, n = 0;
+    paperIds.forEach(function (id) {
+      if (!graph.hasNode(id)) return;
+      cx += graph.getNodeAttribute(id, "x");
+      cy += graph.getNodeAttribute(id, "y");
+      n++;
+    });
+    return n ? { x: cx / n, y: cy / n } : null;
   }
 
   function drawHulls() {
@@ -557,46 +599,43 @@
     var theme = currentTheme();
 
     regions.forEach(function (region) {
-      var rings = region.rings || (region.hull && region.hull.length >= 3 ? [region.hull] : []);
-      if (!rings.length) return;
+      var papers = region.papers || [];
+      var hull = _computeLiveHull(papers);
+      if (!hull || hull.length < 3) return;
       var color = theme === "dark" ? region.color.dark : region.color.light;
 
-      rings.forEach(function (ring) {
-        if (ring.length < 3) return;
-
-        // Transform ring points from graph coords to viewport
-        var viewPts = ring.map(function (pt) {
-          return renderer.graphToViewport({
-            x: pt[0] * SCALE_FACTOR,
-            y: pt[1] * SCALE_FACTOR,
-          });
-        });
-
-        // Draw the pre-smoothed shape directly (Shapely buffer is already smooth)
-        hullCtx.beginPath();
-        hullCtx.moveTo(viewPts[0].x, viewPts[0].y);
-        for (var i = 1; i < viewPts.length; i++) {
-          hullCtx.lineTo(viewPts[i].x, viewPts[i].y);
-        }
-        hullCtx.closePath();
-        hullCtx.fillStyle = hexToRgba(color, 0.07);
-        hullCtx.fill();
-        hullCtx.strokeStyle = hexToRgba(color, 0.25);
-        hullCtx.lineWidth = 1.5;
-        hullCtx.stroke();
+      // Transform hull points to viewport
+      var viewPts = hull.map(function (p) {
+        return renderer.graphToViewport(p);
       });
 
+      // Draw smooth closed curve (quadratic bezier through edge midpoints)
+      var n = viewPts.length;
+      hullCtx.beginPath();
+      var mx0 = (viewPts[n - 1].x + viewPts[0].x) / 2;
+      var my0 = (viewPts[n - 1].y + viewPts[0].y) / 2;
+      hullCtx.moveTo(mx0, my0);
+      for (var i = 0; i < n; i++) {
+        var next = (i + 1) % n;
+        var mx = (viewPts[i].x + viewPts[next].x) / 2;
+        var my = (viewPts[i].y + viewPts[next].y) / 2;
+        hullCtx.quadraticCurveTo(viewPts[i].x, viewPts[i].y, mx, my);
+      }
+      hullCtx.closePath();
+      hullCtx.fillStyle = hexToRgba(color, 0.07);
+      hullCtx.fill();
+      hullCtx.strokeStyle = hexToRgba(color, 0.25);
+      hullCtx.lineWidth = 1.5;
+      hullCtx.stroke();
     });
 
     // Draw topic labels on the overlay canvas (in front of nodes)
     if (labelCtx) {
       regions.forEach(function (region) {
-        if (!region.centroid) return;
+        var centroid = _liveRegionCentroid(region.papers || []);
+        if (!centroid) return;
         var color = theme === "dark" ? region.color.dark : region.color.light;
-        var cView = renderer.graphToViewport({
-          x: region.centroid[0] * SCALE_FACTOR,
-          y: region.centroid[1] * SCALE_FACTOR,
-        });
+        var cView = renderer.graphToViewport(centroid);
         labelCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
         labelCtx.textAlign = "center";
         labelCtx.textBaseline = "middle";
@@ -654,11 +693,9 @@
     var regions = graphData ? (graphData.topic_regions || []) : [];
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
-      if (!region.centroid) continue;
-      var cView = renderer.graphToViewport({
-        x: region.centroid[0] * SCALE_FACTOR,
-        y: region.centroid[1] * SCALE_FACTOR,
-      });
+      var centroid = _liveRegionCentroid(region.papers || []);
+      if (!centroid) continue;
+      var cView = renderer.graphToViewport(centroid);
       // Hit test: within bounding box of the label text
       var labelW = region.label.length * 7; // rough width estimate
       var labelH = 18;
@@ -681,11 +718,9 @@
     var regions = graphData ? (graphData.topic_regions || []) : [];
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
-      if (!region.centroid) continue;
-      var cView = renderer.graphToViewport({
-        x: region.centroid[0] * SCALE_FACTOR,
-        y: region.centroid[1] * SCALE_FACTOR,
-      });
+      var centroid = _liveRegionCentroid(region.papers || []);
+      if (!centroid) continue;
+      var cView = renderer.graphToViewport(centroid);
       var labelW = region.label.length * 7;
       var labelH = 18;
       if (Math.abs(mx - cView.x) < labelW / 2 && Math.abs(my - cView.y) < labelH / 2) {
