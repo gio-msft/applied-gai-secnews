@@ -16,7 +16,7 @@
   const EDGE_COLORS = {
     citations: { light: "rgba(70,70,160,0.5)",   dark: "rgba(140,160,255,0.35)" },
     authors:   { light: "rgba(160,70,70,0.5)",    dark: "rgba(255,160,140,0.45)" },
-    semantic:  { light: "rgba(40,160,80,0.5)",     dark: "rgba(100,220,140,0.4)"  },
+    semantic:  { light: "rgba(30,130,65,0.55)",     dark: "rgba(100,220,140,0.4)"  },
   };
 
   const MIN_NODE_SIZE = 1.5;
