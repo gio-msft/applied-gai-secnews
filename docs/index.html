@@ -47,6 +47,12 @@
   <!-- Hover tooltip -->
   <div id="node-tooltip" class="node-tooltip hidden"></div>
 
+  <!-- Cluster filter banner -->
+  <div id="cluster-filter-banner" class="cluster-filter-banner hidden">
+    <span>Showing topic: </span><strong id="cluster-filter-label"></strong>
+    <button id="cluster-filter-clear" class="icon-btn" title="Clear filter" aria-label="Clear filter">&times;</button>
+  </div>
+
   <!-- Selection ring overlay -->
   <div id="selection-ring" class="selection-ring hidden"></div>
 
@@ -59,6 +65,7 @@
       <div id="card-meta">
         <span id="card-score" class="badge score-badge"></span>
         <span id="card-tag" class="badge tag-badge"></span>
+        <span id="card-cluster" class="badge cluster-badge"></span>
         <time id="card-date"></time>
       </div>
       <p id="card-authors" class="card-authors"></p>

@@ -40,7 +40,7 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
 | [`secnews/utils_db.py`](../secnews/utils_db.py) | `PaperDB` — JSON-file-backed database (`papers.json`). In-memory list of dicts, flushed to disk on every write. |
 | [`secnews/utils_comms.py`](../secnews/utils_comms.py) | Markdown + HTML formatting, `.md` and `.eml` file generation. |
 | [`secnews/utils_citations.py`](../secnews/utils_citations.py) | Semantic Scholar citation fetcher with persistent JSON cache (`citations_cache.json`). Incremental: only queries S2 for papers not yet cached. |
-| [`build_viz.py`](../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, computes per-paper embeddings (cached in `embeddings_cache.json`), pre-computes layout, and writes `docs/data/graph.json`. |
+| [`build_viz.py`](../build_viz.py) | Builds the interactive graph visualization — reads `papers.json`, fetches citations, computes author-overlap edges, computes per-paper embeddings (cached in `embeddings_cache.json`), runs UMAP for semantic layout, computes Shapely buffered-union bubble outlines for topic clusters, and writes `docs/data/graph.json`. |
 | [`projects.json`](../projects.json) | Research project definitions (`id` + `description`) for project-relevance matching. |
 
 ## Paper Record Schema
@@ -111,6 +111,9 @@ python build_viz.py
 # Build viz without embedding computation (no Azure OpenAI for embeddings)
 python build_viz.py --skip-citations --skip-embeddings
 
+# Rebuild viz reusing existing cluster labels (no LLM calls for labels)
+python build_viz.py --skip-citations --reuse-clusters
+
 # Build viz as part of the main pipeline run
 python deepthought.py --build-viz
 
@@ -143,8 +146,12 @@ papers.json ──► build_viz.py ──► docs/data/graph.json
                     ├── reads papers.json (all summarized papers)
                     ├── fetches citations via Semantic Scholar batch API (cached in citations_cache.json)
                     ├── computes author-overlap edges (inverted author index)
-                    ├── pre-computes ForceAtlas2 layout (networkx spring_layout)
-                    └── outputs single graph.json with nodes + two edge arrays + positions
+                    ├── computes embeddings via Azure OpenAI text-embedding-3-large (cached in embeddings_cache.json)
+                    ├── HDBSCAN topic clustering on PCA-reduced embeddings, LLM-generated cluster labels
+                    ├── pre-computes structural layout (networkx spring_layout on citation + author edges)
+                    ├── pre-computes semantic layout (UMAP 2D projection of embedding vectors)
+                    ├── computes Shapely buffered-union bubble outlines per topic cluster
+                    └── outputs single graph.json with nodes + three edge arrays + dual positions + topic regions
 
 docs/
 ├── index.html          ← entry point (vanilla HTML, CDN deps)
@@ -155,7 +162,7 @@ docs/
 
 ### Features
 - **Three edge layers**: Semantic (similarity-based, green/teal), Citations (directed, from Semantic Scholar, blue/purple), and Shared Authors (undirected, by name overlap, red/orange). Users toggle between them.
-- **Semantic mode**: Switching to "Semantic" also animates nodes to an embedding-based layout, draws labeled convex-hull topic region overlays (HDBSCAN clusters with LLM-generated labels), and shows similarity edges.
+- **Semantic mode**: Switching to "Semantic" animates nodes to a UMAP embedding-based layout, draws labeled bubble-shaped topic region overlays (HDBSCAN clusters with LLM-generated labels, Shapely buffered-union outlines), and shows similarity edges only on hover/selection.
 - **Similar Papers card section**: The card panel always shows a "Similar Papers" section (top-5 by cosine similarity) regardless of active layer.
 - **Node encoding**: Size by `interest_score`, color by `tag` (security/cyber/general).
 - **Click-to-inspect**: Clicking a node opens a card panel with title, authors, affiliations, arXiv link, score, summary, key findings, and project affinity.

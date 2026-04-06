@@ -294,6 +294,35 @@ html, body {
   display: none;
 }
 
+/* --- Cluster filter banner ----------------------------------------------- */
+.cluster-filter-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border: 2px solid var(--accent-solid);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: opacity 0.2s ease;
+}
+
+.cluster-filter-banner.hidden {
+  display: none;
+}
+
+.cluster-filter-banner .icon-btn {
+  font-size: 18px;
+  margin-left: 4px;
+}
+
 /* --- Selection ring (gradient halo around selected node) ----------------- */
 .selection-ring {
   position: fixed;
@@ -410,6 +439,12 @@ html, body {
 .tag-security { background: var(--badge-security-bg); color: var(--badge-security-text); }
 .tag-cyber    { background: var(--badge-cyber-bg);    color: var(--badge-cyber-text); }
 .tag-general  { background: var(--badge-general-bg);  color: var(--badge-general-text); }
+
+.cluster-badge {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
 
 .project-badge {
   background: var(--badge-project-bg);
