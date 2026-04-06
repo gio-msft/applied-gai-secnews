@@ -334,3 +334,211 @@ class TestScreenshots:
         assert os.path.exists(path)
         assert os.path.getsize(path) > 1000
         browser.close()
+
+
+class TestSplitView:
+    """Tests for the Split Graph/List Mode feature."""
+
+    def test_view_toggle_buttons_exist(self, browser_page):
+        """View toggle buttons for graph, split, and list modes should exist."""
+        for mode in ("graph", "split", "list"):
+            btn = browser_page.query_selector(f'.view-btn[data-view="{mode}"]')
+            assert btn is not None, f"Missing view button for '{mode}'"
+
+    def test_graph_mode_default(self, browser_page):
+        """Graph mode should be active by default."""
+        btn = browser_page.query_selector('.view-btn[data-view="graph"]')
+        assert "active" in btn.get_attribute("class")
+        container = browser_page.query_selector("#main-container")
+        assert "view-graph" in container.get_attribute("class")
+
+    def test_table_hidden_in_graph_mode(self, browser_page):
+        """Paper table should not be visible in graph-only mode."""
+        table_container = browser_page.query_selector("#paper-table-container")
+        assert not table_container.is_visible()
+
+    def test_switch_to_split_view(self, browser_page):
+        """Clicking split button should show both graph and table side by side."""
+        browser_page.click('.view-btn[data-view="split"]')
+        browser_page.wait_for_timeout(400)
+
+        # Split button should be active
+        btn = browser_page.query_selector('.view-btn[data-view="split"]')
+        assert "active" in btn.get_attribute("class")
+
+        # Both panes should be visible
+        graph_pane = browser_page.query_selector("#graph-pane")
+        table_container = browser_page.query_selector("#paper-table-container")
+        assert graph_pane.is_visible()
+        assert table_container.is_visible()
+
+        # Container should have split class
+        container = browser_page.query_selector("#main-container")
+        assert "view-split" in container.get_attribute("class")
+
+    def test_table_has_rows(self, browser_page):
+        """Table should have rows matching the number of sample papers (3)."""
+        # Should still be in split mode from previous test
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        assert len(rows) == 3, f"Expected 3 table rows, got {len(rows)}"
+
+    def test_table_columns(self, browser_page):
+        """Each row should have 4 cells: title, score, tag, date."""
+        row = browser_page.query_selector("#paper-table-body tr")
+        cells = row.query_selector_all("td")
+        assert len(cells) == 4, f"Expected 4 cells per row, got {len(cells)}"
+
+    def test_table_default_sort_by_score(self, browser_page):
+        """Default sort should be by score descending."""
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        scores = []
+        for row in rows:
+            score = row.get_attribute("data-score")
+            scores.append(int(score))
+        assert scores == sorted(scores, reverse=True), \
+            f"Scores not in descending order: {scores}"
+
+    def test_table_sort_by_title(self, browser_page):
+        """Clicking title header should sort alphabetically."""
+        # First click gives descending (toggle from non-title col)
+        browser_page.click('#paper-table th[data-sort="title"]')
+        browser_page.wait_for_timeout(100)
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        titles = [row.get_attribute("data-title") for row in rows]
+        assert titles == sorted(titles, reverse=True), \
+            f"Titles not sorted descending: {titles}"
+
+        # Click again for ascending
+        browser_page.click('#paper-table th[data-sort="title"]')
+        browser_page.wait_for_timeout(100)
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        titles = [row.get_attribute("data-title") for row in rows]
+        assert titles == sorted(titles), f"Titles not sorted ascending: {titles}"
+
+    def test_table_row_click_opens_card(self, browser_page):
+        """Clicking a table row should open the card panel."""
+        browser_page.click("#card-close", force=True) if browser_page.query_selector(
+            "#card-panel:not(.hidden)") else None
+        browser_page.wait_for_timeout(200)
+
+        # Click first table row
+        first_row = browser_page.query_selector("#paper-table-body tr")
+        first_row.click()
+        browser_page.wait_for_timeout(600)
+
+        # Card panel should be visible
+        panel = browser_page.query_selector("#card-panel")
+        class_attr = panel.get_attribute("class") or ""
+        assert "hidden" not in class_attr, "Card panel should be visible after row click"
+
+        # Selected row should have the pt-selected class
+        assert "pt-selected" in first_row.get_attribute("class")
+
+    def test_table_row_hover_highlights(self, browser_page):
+        """Hovering a table row should add the pt-hovered class."""
+        # Close card panel if open (it can overlay the table)
+        browser_page.click("#card-close", force=True)
+        browser_page.wait_for_timeout(300)
+        second_row = browser_page.query_selector_all("#paper-table-body tr")[1]
+        second_row.hover()
+        browser_page.wait_for_timeout(200)
+        assert "pt-hovered" in (second_row.get_attribute("class") or "")
+
+    def test_switch_to_list_view(self, browser_page):
+        """Clicking list button should hide graph and show full-width table."""
+        browser_page.click('.view-btn[data-view="list"]')
+        browser_page.wait_for_timeout(400)
+
+        btn = browser_page.query_selector('.view-btn[data-view="list"]')
+        assert "active" in btn.get_attribute("class")
+
+        graph_pane = browser_page.query_selector("#graph-pane")
+        table_container = browser_page.query_selector("#paper-table-container")
+        assert not graph_pane.is_visible()
+        assert table_container.is_visible()
+
+    def test_switch_back_to_graph(self, browser_page):
+        """Switching back to graph mode should hide table."""
+        browser_page.click('.view-btn[data-view="graph"]')
+        browser_page.wait_for_timeout(400)
+
+        graph_pane = browser_page.query_selector("#graph-pane")
+        table_container = browser_page.query_selector("#paper-table-container")
+        assert graph_pane.is_visible()
+        assert not table_container.is_visible()
+
+    def test_tag_filter_hides_table_rows(self, browser_page):
+        """Deactivating a tag should hide matching table rows in split mode."""
+        # Switch to split mode
+        browser_page.click('.view-btn[data-view="split"]')
+        browser_page.wait_for_timeout(400)
+
+        # Deactivate 'cyber' tag (only 1 paper: AI-Powered Malware)
+        browser_page.click('.legend-item[data-tag="cyber"]')
+        browser_page.wait_for_timeout(200)
+
+        # Check that the cyber paper row is hidden
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        visible_count = 0
+        for row in rows:
+            if "pt-hidden" not in (row.get_attribute("class") or ""):
+                visible_count += 1
+        assert visible_count == 2, f"Expected 2 visible rows, got {visible_count}"
+
+        # Re-activate it
+        browser_page.click('.legend-item[data-tag="cyber"]')
+        browser_page.wait_for_timeout(200)
+
+    def test_search_filters_table(self, browser_page):
+        """Searching should filter table rows to matching papers."""
+        browser_page.fill("#search-input", "Backdoor")
+        browser_page.wait_for_timeout(600)
+
+        rows = browser_page.query_selector_all("#paper-table-body tr")
+        visible_count = 0
+        for row in rows:
+            if "pt-hidden" not in (row.get_attribute("class") or ""):
+                visible_count += 1
+        assert visible_count == 1, f"Expected 1 visible row for 'Backdoor', got {visible_count}"
+
+        # Clean up
+        browser_page.click("#search-clear")
+        browser_page.wait_for_timeout(300)
+
+
+class TestSplitViewScreenshots:
+    """Capture screenshots of all three view modes for visual inspection."""
+
+    def test_capture_split_view(self, pw_instance, viz_server, tmp_path):
+        browser = pw_instance.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 800})
+        page.goto(viz_server + "/index.html", wait_until="networkidle")
+        page.wait_for_selector("#loading-overlay", state="hidden", timeout=15000)
+
+        # Graph mode screenshot
+        page.wait_for_timeout(500)
+        page.screenshot(path=str(tmp_path / "view-graph.png"))
+
+        # Split mode screenshot
+        page.click('.view-btn[data-view="split"]')
+        page.wait_for_timeout(500)
+        page.screenshot(path=str(tmp_path / "view-split.png"))
+
+        # List mode screenshot
+        page.click('.view-btn[data-view="list"]')
+        page.wait_for_timeout(500)
+        page.screenshot(path=str(tmp_path / "view-list.png"))
+
+        # Verify all screenshots exist and have content
+        for name in ("view-graph.png", "view-split.png", "view-list.png"):
+            path = str(tmp_path / name)
+            assert os.path.exists(path), f"Screenshot {name} not found"
+            assert os.path.getsize(path) > 1000, f"Screenshot {name} too small"
+
+        # Copy screenshots to project screenshots dir for review
+        screenshots_dir = os.path.join(PROJECT_ROOT, "screenshots")
+        os.makedirs(screenshots_dir, exist_ok=True)
+        for name in ("view-graph.png", "view-split.png", "view-list.png"):
+            shutil.copy2(str(tmp_path / name), os.path.join(screenshots_dir, name))
+
+        browser.close()
