@@ -18,6 +18,11 @@
         <button class="layer-btn active" data-layer="citations" aria-pressed="true">Citations</button>
         <button class="layer-btn" data-layer="authors" aria-pressed="false">Shared Authors</button>
       </div>
+      <div class="view-toggle" role="radiogroup" aria-label="View mode">
+        <button class="view-btn active" data-view="graph" aria-pressed="true" title="Graph only">⊞</button>
+        <button class="view-btn" data-view="split" aria-pressed="false" title="Split view">⊟</button>
+        <button class="view-btn" data-view="list" aria-pressed="false" title="List only">☰</button>
+      </div>
     </div>
     <div class="toolbar-right">
       <div class="search-box">
@@ -45,10 +50,12 @@
           &bull; <em>Shared Authors</em> — papers by the same authors<br/>
           &bull; <em>Semantic</em> — embedding similarity + topic clusters</li>
         <li><strong>Semantic mode</strong> rearranges nodes by meaning and shows <em>topic regions</em> — click a label to filter</li>
-        <li><strong>Click</strong> a node to open its detail card (score, authors, summary, links)</li>
+        <li><strong>View modes</strong> (⊞ ⊟ ☰ buttons): <em>Graph</em> only, <em>Split</em> (graph + sortable table), or <em>List</em> only. The table and graph stay in sync — clicking or hovering in one highlights the other</li>
+        <li><strong>Click</strong> a node or table row to open its detail card (score, authors, summary, links)</li>
         <li><strong>Hover</strong> a node to highlight its neighbors</li>
         <li><strong>Drag</strong> a node — its neighbors follow with spring physics</li>
-        <li><strong>Search</strong> papers by title from the toolbar</li>
+        <li><strong>Sort</strong> the table by title, score, tag, or date (click column headers)</li>
+        <li><strong>Search</strong> papers by title from the toolbar — filters both graph and table</li>
         <li><strong>Zoom/pan</strong> with scroll wheel and mouse drag</li>
       </ul>
     </div>
@@ -61,14 +68,30 @@
     <div class="legend-item active" data-tag="general"><span class="legend-dot" style="background:var(--color-general)"></span> General</div>
   </div>
 
-  <!-- Hull canvas (behind Sigma, for topic region overlays) -->
-  <canvas id="hull-canvas"></canvas>
+  <!-- Main split layout container -->
+  <div id="main-container" class="view-graph">
+    <!-- Graph pane (hull canvas + graph + label canvas) -->
+    <div id="graph-pane">
+      <canvas id="hull-canvas"></canvas>
+      <div id="graph-container"></div>
+      <canvas id="label-canvas"></canvas>
+    </div>
 
-  <!-- Graph container -->
-  <div id="graph-container"></div>
-
-  <!-- Label overlay canvas (in front of Sigma, for topic labels) -->
-  <canvas id="label-canvas"></canvas>
+    <!-- Paper table pane -->
+    <div id="paper-table-container">
+      <table id="paper-table">
+        <thead>
+          <tr>
+            <th class="pt-col-title" data-sort="title">Title <span class="sort-arrow"></span></th>
+            <th class="pt-col-score" data-sort="score">Score <span class="sort-arrow">▼</span></th>
+            <th class="pt-col-tag" data-sort="tag">Tag <span class="sort-arrow"></span></th>
+            <th class="pt-col-date" data-sort="date">Date <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="paper-table-body"></tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- Hover tooltip -->
   <div id="node-tooltip" class="node-tooltip hidden"></div>

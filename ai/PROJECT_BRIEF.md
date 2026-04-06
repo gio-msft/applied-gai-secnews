@@ -163,10 +163,11 @@ docs/
 ### Features
 - **Three edge layers**: Semantic (similarity-based, green/teal), Citations (directed, from Semantic Scholar, blue/purple), and Shared Authors (undirected, by name overlap, red/orange). Users toggle between them.
 - **Semantic mode**: Switching to "Semantic" animates nodes to a UMAP embedding-based layout, draws labeled bubble-shaped topic region overlays (HDBSCAN clusters with LLM-generated labels, Shapely buffered-union outlines), and shows similarity edges only on hover/selection.
+- **Split Graph/List view**: Three view modes (Graph only, Split, List only) toggled via toolbar buttons. Split mode shows the graph on the left and a sortable paper table on the right. The two views are fully synchronized: clicking or hovering in one highlights the corresponding element in the other. The table supports sorting by title, score, tag, or date (with secondary tiebreakers: score desc, date desc). Tag filters, cluster filters, and search all apply to both views simultaneously. Keyboard navigation (arrow keys, Enter, Escape) is supported in the table.
 - **Similar Papers card section**: The card panel always shows a "Similar Papers" section (top-5 by cosine similarity) regardless of active layer.
 - **Node encoding**: Size by `interest_score`, color by `tag` (security/cyber/general).
-- **Click-to-inspect**: Clicking a node opens a card panel with title, authors, affiliations, arXiv link, score, summary, key findings, and project affinity.
-- **Search**: Type-ahead search by paper title, zooms to matching node.
+- **Click-to-inspect**: Clicking a node or table row opens a card panel with title, authors, affiliations, arXiv link, score, summary, key findings, and project affinity.
+- **Search**: Type-ahead search by paper title, zooms to matching node and filters the table.
 - **Light/dark theme**: Toggle with system preference detection; uses CSS custom properties and gradient accents.
 - **GitHub Pages ready**: Static HTML/JS/CSS, `.nojekyll` in `docs/`, no build tools needed.
 

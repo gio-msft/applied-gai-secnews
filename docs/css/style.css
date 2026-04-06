@@ -341,35 +341,206 @@ html, body {
   display: inline-block;
 }
 
-/* --- Hull canvas (topic region overlays) --------------------------------- */
-#hull-canvas {
+/* --- View toggle --------------------------------------------------------- */
+.view-toggle {
+  display: flex;
+  background: var(--bg-input);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin-left: 4px;
+}
+
+.view-btn {
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.view-btn.active {
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+.view-btn:hover:not(.active) {
+  background: var(--bg-surface-hover);
+}
+
+/* --- Main split layout container ----------------------------------------- */
+#main-container {
   position: fixed;
   top: 56px;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 0;        /* sits behind graph-container */
+  display: grid;
+  grid-template-columns: 1fr;
+  transition: grid-template-columns 0.3s ease;
+}
+
+#main-container.view-graph #paper-table-container {
+  display: none;
+}
+
+#main-container.view-split {
+  grid-template-columns: 1fr 1fr;
+}
+
+#main-container.view-list #graph-pane {
+  display: none;
+}
+
+#main-container.view-list {
+  grid-template-columns: 1fr;
+}
+
+/* --- Graph pane (contains hull, graph, label canvases) ------------------- */
+#graph-pane {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+#hull-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
   pointer-events: none;
 }
 
 #label-canvas {
-  position: fixed;
-  top: 56px;
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;        /* sits in front of graph-container */
+  z-index: 2;
   pointer-events: none;
 }
 
-/* --- Graph container ----------------------------------------------------- */
 #graph-container {
-  position: fixed;
-  top: 56px;
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 1;
+}
+
+/* --- Paper table pane ---------------------------------------------------- */
+#paper-table-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  min-width: 0;
+}
+
+#paper-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+#paper-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-surface);
+}
+
+#paper-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+#paper-table th:hover {
+  color: var(--text-primary);
+}
+
+.pt-col-title { width: auto; }
+.pt-col-score { width: 70px; text-align: center; }
+.pt-col-tag   { width: 90px; }
+.pt-col-date  { width: 100px; }
+
+.sort-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+#paper-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+#paper-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#paper-table tbody tr:hover {
+  background: var(--bg-surface-hover);
+}
+
+#paper-table tbody tr.pt-selected {
+  background: var(--badge-security-bg);
+}
+
+#paper-table tbody tr.pt-hovered {
+  background: var(--bg-surface-hover);
+}
+
+#paper-table tbody tr.pt-hidden {
+  display: none;
+}
+
+.pt-cell-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pt-cell-score {
+  text-align: center;
+  font-weight: 700;
+  background: var(--score-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pt-cell-tag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pt-cell-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 /* --- Node hover tooltip -------------------------------------------------- */
@@ -736,7 +907,15 @@ html, body {
     transform: translateY(100%);
   }
 
-  #graph-container {
+  #main-container {
     top: 48px;
+  }
+
+  /* Force graph-only or list-only on mobile — no split */
+  #main-container.view-split {
+    grid-template-columns: 1fr;
+  }
+  #main-container.view-split #paper-table-container {
+    display: none;
   }
 }

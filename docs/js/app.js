@@ -39,12 +39,19 @@
   let draggedNode = null;
   let isDragging = false;
   var activeTags = new Set(["security", "cyber", "general"]);
+  var currentView = "graph"; // "graph" | "split" | "list"
+  var tableSortCol = "score";
+  var tableSortDir = "desc";
+  var tableFocusedRow = -1;
 
   // --- DOM refs ------------------------------------------------------------
   const container = document.getElementById("graph-container");
+  const graphPane = document.getElementById("graph-pane");
+  const mainContainer = document.getElementById("main-container");
   const loadingOverlay = document.getElementById("loading-overlay");
   const cardPanel = document.getElementById("card-panel");
   const searchInput = document.getElementById("search-input");
+  const tableBody = document.getElementById("paper-table-body");
 
   // --- Theme ---------------------------------------------------------------
   function currentTheme() {
@@ -98,6 +105,7 @@
         item.classList.add("active");
       }
       if (renderer) renderer.refresh();
+      refreshTableVisibility();
     });
   });
 
@@ -123,6 +131,7 @@
         };
       });
       initGraph();
+      buildTable();
       loadingOverlay.style.display = "none";
     })
     .catch(function (err) {
@@ -308,6 +317,8 @@
       var attrs = graph.getNodeAttributes(nodeId);
       showCard(attrs._data);
       highlightNode(nodeId);
+      // Sync: select table row on graph click
+      tableSelectRow(nodeId);
     });
 
     // --- Event: click stage (deselect) --------------------------------------
@@ -315,6 +326,7 @@
       selectedNode = null;
       hideCard();
       clearHighlight();
+      tableSelectRow(null);
     });
 
     // --- Event: hover -------------------------------------------------------
@@ -326,6 +338,8 @@
       tooltip.textContent = (data.emoji || "") + " " + (data.title || event.node);
       tooltip.classList.remove("hidden");
       renderer.refresh();
+      // Sync: highlight table row on graph hover
+      tableHoverRow(event.node);
     });
 
     renderer.getMouseCaptor().on("mousemovebody", function (event) {
@@ -339,6 +353,8 @@
       highlightedNode = null;
       tooltip.classList.add("hidden");
       renderer.refresh();
+      // Sync: clear table row hover
+      tableHoverRow(null);
     });
 
     // Node reducer for hover / selection / cluster filter dimming
@@ -435,6 +451,265 @@
       drawHulls();
     });
   }
+
+  // --- Paper table ---------------------------------------------------------
+  function buildTable() {
+    if (!graphData || !tableBody) return;
+    tableBody.innerHTML = "";
+    graphData.nodes.forEach(function (n) {
+      var tr = document.createElement("tr");
+      tr.setAttribute("data-node-id", n.id);
+      tr.setAttribute("data-score", n.interest_score || 0);
+      tr.setAttribute("data-tag", n.tag || "general");
+      tr.setAttribute("data-date", (n.published || "").slice(0, 10));
+      tr.setAttribute("data-title", (n.title || "").toLowerCase());
+
+      var tdTitle = document.createElement("td");
+      tdTitle.className = "pt-cell-title";
+      tdTitle.textContent = (n.emoji || "") + " " + (n.title || n.id);
+      tdTitle.title = n.title || n.id;
+      tr.appendChild(tdTitle);
+
+      var tdScore = document.createElement("td");
+      tdScore.className = "pt-cell-score";
+      tdScore.textContent = n.interest_score || "?";
+      tr.appendChild(tdScore);
+
+      var tdTag = document.createElement("td");
+      tdTag.className = "pt-cell-tag";
+      tdTag.textContent = n.tag || "general";
+      tdTag.style.color = "var(--badge-" + (n.tag || "general") + "-text)";
+      tr.appendChild(tdTag);
+
+      var tdDate = document.createElement("td");
+      tdDate.className = "pt-cell-date";
+      tdDate.textContent = (n.published || "").slice(0, 10);
+      tr.appendChild(tdDate);
+
+      // Row interactions
+      tr.addEventListener("click", function () {
+        var nodeId = n.id;
+        selectedNode = nodeId;
+        if (graph && graph.hasNode(nodeId)) {
+          var attrs = graph.getNodeAttributes(nodeId);
+          showCard(attrs._data);
+          highlightNode(nodeId);
+          if (renderer && currentView !== "list") {
+            var pos = renderer.getNodeDisplayData(nodeId);
+            if (pos) renderer.getCamera().animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
+          }
+        }
+        tableSelectRow(nodeId);
+      });
+
+      tr.addEventListener("mouseenter", function () {
+        if (graph && graph.hasNode(n.id) && renderer && currentView !== "list") {
+          highlightedNode = n.id;
+          renderer.refresh();
+        }
+        tr.classList.add("pt-hovered");
+      });
+
+      tr.addEventListener("mouseleave", function () {
+        if (renderer && currentView !== "list") {
+          highlightedNode = null;
+          renderer.refresh();
+        }
+        tr.classList.remove("pt-hovered");
+      });
+
+      tableBody.appendChild(tr);
+    });
+
+    sortTable("score", "desc");
+  }
+
+  function sortTable(col, dir) {
+    tableSortCol = col;
+    tableSortDir = dir;
+    var rows = Array.from(tableBody.querySelectorAll("tr"));
+    rows.sort(function (a, b) {
+      var av, bv;
+      if (col === "score") {
+        av = parseFloat(a.getAttribute("data-score")) || 0;
+        bv = parseFloat(b.getAttribute("data-score")) || 0;
+      } else if (col === "date") {
+        av = a.getAttribute("data-date") || "";
+        bv = b.getAttribute("data-date") || "";
+      } else if (col === "tag") {
+        av = a.getAttribute("data-tag") || "";
+        bv = b.getAttribute("data-tag") || "";
+      } else {
+        av = a.getAttribute("data-title") || "";
+        bv = b.getAttribute("data-title") || "";
+      }
+      var cmp;
+      if (typeof av === "number" && typeof bv === "number") {
+        cmp = av - bv;
+      } else {
+        cmp = String(av).localeCompare(String(bv));
+      }
+      var primary = dir === "desc" ? -cmp : cmp;
+      if (primary !== 0) return primary;
+      // Secondary sort: score desc then date desc (newest first)
+      if (col !== "score") {
+        var sa = parseFloat(a.getAttribute("data-score")) || 0;
+        var sb = parseFloat(b.getAttribute("data-score")) || 0;
+        if (sa !== sb) return sb - sa;
+      }
+      if (col !== "date") {
+        var da = a.getAttribute("data-date") || "";
+        var db = b.getAttribute("data-date") || "";
+        if (da !== db) return da > db ? -1 : 1;
+      }
+      return 0;
+    });
+    rows.forEach(function (r) { tableBody.appendChild(r); });
+    updateSortArrows();
+  }
+
+  function updateSortArrows() {
+    document.querySelectorAll("#paper-table th").forEach(function (th) {
+      var arrow = th.querySelector(".sort-arrow");
+      if (!arrow) return;
+      if (th.getAttribute("data-sort") === tableSortCol) {
+        arrow.textContent = tableSortDir === "desc" ? "\u25BC" : "\u25B2";
+      } else {
+        arrow.textContent = "";
+      }
+    });
+  }
+
+  // Header click for sorting
+  document.querySelectorAll("#paper-table th[data-sort]").forEach(function (th) {
+    th.addEventListener("click", function () {
+      var col = th.getAttribute("data-sort");
+      var dir = (col === tableSortCol && tableSortDir === "desc") ? "asc" : "desc";
+      sortTable(col, dir);
+    });
+  });
+
+  function tableSelectRow(nodeId) {
+    tableBody.querySelectorAll("tr.pt-selected").forEach(function (r) { r.classList.remove("pt-selected"); });
+    if (!nodeId) return;
+    var row = tableBody.querySelector('tr[data-node-id="' + nodeId + '"]');
+    if (row) {
+      row.classList.add("pt-selected");
+      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function tableHoverRow(nodeId) {
+    tableBody.querySelectorAll("tr.pt-hovered").forEach(function (r) { r.classList.remove("pt-hovered"); });
+    if (!nodeId) return;
+    var row = tableBody.querySelector('tr[data-node-id="' + nodeId + '"]');
+    if (row) row.classList.add("pt-hovered");
+  }
+
+  function refreshTableVisibility() {
+    if (!tableBody) return;
+    var query = searchInput.value.trim().toLowerCase();
+    tableBody.querySelectorAll("tr").forEach(function (row) {
+      var tag = row.getAttribute("data-tag");
+      var nodeId = row.getAttribute("data-node-id");
+      var hidden = false;
+
+      // Tag filter
+      if (!activeTags.has(tag)) hidden = true;
+
+      // Cluster filter
+      if (!hidden && filteredCluster != null) {
+        var inCluster = clusterNodeSets[filteredCluster] && clusterNodeSets[filteredCluster].has(nodeId);
+        if (!inCluster) hidden = true;
+      }
+
+      // Search filter
+      if (!hidden && query) {
+        var title = row.getAttribute("data-title") || "";
+        if (title.indexOf(query) === -1) hidden = true;
+      }
+
+      if (hidden) row.classList.add("pt-hidden");
+      else row.classList.remove("pt-hidden");
+    });
+  }
+
+  // --- View toggle ----------------------------------------------------------
+  function switchView(mode) {
+    if (mode === currentView) return;
+    currentView = mode;
+    mainContainer.className = "view-" + mode;
+
+    // Update button states
+    document.querySelectorAll(".view-btn").forEach(function (b) {
+      b.classList.remove("active");
+      b.setAttribute("aria-pressed", "false");
+    });
+    var activeBtn = document.querySelector('.view-btn[data-view="' + mode + '"]');
+    if (activeBtn) {
+      activeBtn.classList.add("active");
+      activeBtn.setAttribute("aria-pressed", "true");
+    }
+
+    // Resize Sigma after layout transition
+    setTimeout(function () {
+      if (renderer && mode !== "list") {
+        renderer.resize();
+        renderer.refresh();
+        drawHulls();
+      }
+    }, 350);
+
+    // Refresh table visibility when entering split/list
+    if (mode !== "graph") refreshTableVisibility();
+  }
+
+  document.querySelectorAll(".view-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      switchView(btn.getAttribute("data-view"));
+    });
+  });
+
+  // --- Keyboard support for table ------------------------------------------
+  document.getElementById("paper-table-container").addEventListener("keydown", function (e) {
+    var visibleRows = Array.from(tableBody.querySelectorAll("tr:not(.pt-hidden)"));
+    if (!visibleRows.length) return;
+
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (e.key === "ArrowDown") tableFocusedRow = Math.min(tableFocusedRow + 1, visibleRows.length - 1);
+      else tableFocusedRow = Math.max(tableFocusedRow - 1, 0);
+
+      var row = visibleRows[tableFocusedRow];
+      if (row) {
+        tableBody.querySelectorAll("tr.pt-hovered").forEach(function (r) { r.classList.remove("pt-hovered"); });
+        row.classList.add("pt-hovered");
+        row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        var nodeId = row.getAttribute("data-node-id");
+        if (graph && graph.hasNode(nodeId) && renderer && currentView !== "list") {
+          highlightedNode = nodeId;
+          renderer.refresh();
+        }
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      var row = visibleRows[tableFocusedRow];
+      if (row) row.click();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      selectedNode = null;
+      hideCard();
+      clearHighlight();
+      tableBody.querySelectorAll("tr.pt-selected, tr.pt-hovered").forEach(function (r) {
+        r.classList.remove("pt-selected");
+        r.classList.remove("pt-hovered");
+      });
+      tableFocusedRow = -1;
+    }
+  });
+
+  // Make table container focusable for keyboard events
+  document.getElementById("paper-table-container").setAttribute("tabindex", "0");
 
   // --- Edge management -----------------------------------------------------
   function addEdges(layer) {
@@ -606,8 +881,8 @@
 
   function drawHulls() {
     if (!hullCtx || !renderer) return;
-    // Resize canvas to match viewport
-    var rect = container.getBoundingClientRect();
+    // Resize canvas to match graph pane (not full viewport)
+    var rect = graphPane.getBoundingClientRect();
     hullCanvas.width = rect.width * (window.devicePixelRatio || 1);
     hullCanvas.height = rect.height * (window.devicePixelRatio || 1);
     hullCanvas.style.width = rect.width + "px";
@@ -689,6 +964,7 @@
     selectedNode = null;
     hideCard();
     clearHighlight();
+    refreshTableVisibility();
 
     var region = clusterLookup[clusterId];
     var banner = document.getElementById("cluster-filter-banner");
@@ -708,6 +984,7 @@
     var banner = document.getElementById("cluster-filter-banner");
     if (banner) banner.classList.add("hidden");
     if (renderer) renderer.refresh();
+    refreshTableVisibility();
   }
 
   // Expose for programmatic access (e.g., tests)
@@ -983,8 +1260,7 @@
     var cameraRatio = renderer.getCamera().getState().ratio;
     var screenNodeSize = nodeSize / cameraRatio;
     var ringSize = Math.max(screenNodeSize * 2 + 6, nodeSize * 2 + 6);
-    var graphContainer = document.getElementById("graph-container");
-    var rect = graphContainer.getBoundingClientRect();
+    var rect = graphPane.getBoundingClientRect();
     selectionRing.style.width = ringSize + "px";
     selectionRing.style.height = ringSize + "px";
     selectionRing.style.left = (rect.left + viewportPos.x - ringSize / 2) + "px";
@@ -1011,8 +1287,12 @@
     var query = searchInput.value.trim().toLowerCase();
     if (!query) {
       clearHighlight();
+      refreshTableVisibility();
       return;
     }
+
+    // Filter table rows
+    refreshTableVisibility();
 
     // Find first matching node
     var match = null;
@@ -1029,10 +1309,13 @@
       showCard(attrs._data);
 
       // Zoom to the node
-      var pos = renderer.getNodeDisplayData(match);
-      var camera = renderer.getCamera();
-      camera.animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
+      if (renderer && currentView !== "list") {
+        var pos = renderer.getNodeDisplayData(match);
+        var camera = renderer.getCamera();
+        camera.animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
+      }
       highlightNode(match);
+      tableSelectRow(match);
     }
   });
 
@@ -1041,6 +1324,8 @@
     selectedNode = null;
     hideCard();
     clearHighlight();
+    refreshTableVisibility();
+    tableSelectRow(null);
   });
 
   // --- Card panel resize ---------------------------------------------------
