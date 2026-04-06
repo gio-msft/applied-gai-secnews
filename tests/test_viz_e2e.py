@@ -54,6 +54,9 @@ SAMPLE_GRAPH = {
             "relevant": True,
             "x": -0.5,
             "y": 0.3,
+            "semantic_x": -0.4,
+            "semantic_y": 0.2,
+            "cluster": 0,
         },
         {
             "id": "2601.00002v1",
@@ -75,6 +78,9 @@ SAMPLE_GRAPH = {
             "relevant": True,
             "x": 0.5,
             "y": -0.2,
+            "semantic_x": 0.6,
+            "semantic_y": -0.1,
+            "cluster": 0,
         },
         {
             "id": "2601.00003v1",
@@ -96,6 +102,9 @@ SAMPLE_GRAPH = {
             "relevant": True,
             "x": 0.0,
             "y": -0.6,
+            "semantic_x": -0.1,
+            "semantic_y": -0.5,
+            "cluster": 1,
         },
     ],
     "citation_edges": [
@@ -107,6 +116,28 @@ SAMPLE_GRAPH = {
             "target": "2601.00002v1",
             "weight": 1,
             "shared_authors": ["Bob Jones"],
+        },
+    ],
+    "similarity_edges": [
+        {"source": "2601.00001v1", "target": "2601.00002v1", "weight": 0.85},
+        {"source": "2601.00001v1", "target": "2601.00003v1", "weight": 0.62},
+    ],
+    "topic_regions": [
+        {
+            "id": 0,
+            "label": "LLM Security",
+            "color": {"light": "#4f6df5", "dark": "#6b8aff"},
+            "papers": ["2601.00001v1", "2601.00002v1"],
+            "hull": [[-0.55, 0.35], [0.55, 0.35], [0.55, -0.25], [-0.55, -0.25]],
+            "centroid": [0.0, 0.05],
+        },
+        {
+            "id": 1,
+            "label": "Cyber Threat Analysis",
+            "color": {"light": "#e67e22", "dark": "#f5a623"},
+            "papers": ["2601.00003v1"],
+            "hull": [],
+            "centroid": [-0.1, -0.5],
         },
     ],
 }

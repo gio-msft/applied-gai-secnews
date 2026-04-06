@@ -8,3 +8,5 @@ pytest-playwright
 python-dotenv
 requests
 requests-futures
+scikit-learn
+scipy

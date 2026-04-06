@@ -154,7 +154,9 @@ docs/
 ```
 
 ### Features
-- **Two edge layers**: Citations (directed, from Semantic Scholar) and Shared Authors (undirected, by name overlap). Users toggle between them.
+- **Three edge layers**: Semantic (similarity-based, green/teal), Citations (directed, from Semantic Scholar, blue/purple), and Shared Authors (undirected, by name overlap, red/orange). Users toggle between them.
+- **Semantic mode**: Switching to "Semantic" also animates nodes to an embedding-based layout, draws labeled convex-hull topic region overlays (HDBSCAN clusters with LLM-generated labels), and shows similarity edges.
+- **Similar Papers card section**: The card panel always shows a "Similar Papers" section (top-5 by cosine similarity) regardless of active layer.
 - **Node encoding**: Size by `interest_score`, color by `tag` (security/cyber/general).
 - **Click-to-inspect**: Clicking a node opens a card panel with title, authors, affiliations, arXiv link, score, summary, key findings, and project affinity.
 - **Search**: Type-ahead search by paper title, zooms to matching node.
