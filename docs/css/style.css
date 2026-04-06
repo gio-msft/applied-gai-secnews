@@ -321,6 +321,17 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.legend-item:not(.active) {
+  opacity: 0.35;
+}
+
+.legend-item:hover {
+  opacity: 1;
 }
 
 .legend-dot {

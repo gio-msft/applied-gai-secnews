@@ -38,6 +38,7 @@
   let selectedNode = null;
   let draggedNode = null;
   let isDragging = false;
+  var activeTags = new Set(["security", "cyber", "general"]);
 
   // --- DOM refs ------------------------------------------------------------
   const container = document.getElementById("graph-container");
@@ -81,6 +82,24 @@
   if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
     applyTheme("light");
   }
+
+  // --- Legend tag filter ----------------------------------------------------
+  document.querySelectorAll("#legend .legend-item").forEach(function (item) {
+    item.addEventListener("click", function () {
+      var tag = item.getAttribute("data-tag");
+      if (!tag) return;
+      if (activeTags.has(tag)) {
+        // Don't allow deselecting the last active tag
+        if (activeTags.size <= 1) return;
+        activeTags.delete(tag);
+        item.classList.remove("active");
+      } else {
+        activeTags.add(tag);
+        item.classList.add("active");
+      }
+      if (renderer) renderer.refresh();
+    });
+  });
 
   // --- Data loading --------------------------------------------------------
   fetch("data/graph.json")
@@ -327,6 +346,13 @@
       var res = Object.assign({}, data);
       var dimColor = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
 
+      // --- Tag filter: hide nodes whose tag is not active ---
+      var nodeTag = (data._data && data._data.tag) || "general";
+      if (!activeTags.has(nodeTag)) {
+        res.hidden = true;
+        return res;
+      }
+
       // --- Cluster filter: hide nodes not in the filtered cluster ---
       if (filteredCluster != null) {
         var inCluster = clusterNodeSets[filteredCluster] && clusterNodeSets[filteredCluster].has(node);
@@ -359,6 +385,14 @@
 
     renderer.setSetting("edgeReducer", function (edge, data) {
       var res = Object.assign({}, data);
+
+      // --- Tag filter: hide edges connected to hidden nodes ---
+      var sTag = (graph.getNodeAttribute(graph.source(edge), "_data") || {}).tag || "general";
+      var tTag = (graph.getNodeAttribute(graph.target(edge), "_data") || {}).tag || "general";
+      if (!activeTags.has(sTag) || !activeTags.has(tTag)) {
+        res.hidden = true;
+        return res;
+      }
 
       // --- Cluster filter: hide edges not connecting cluster nodes ---
       if (filteredCluster != null) {
