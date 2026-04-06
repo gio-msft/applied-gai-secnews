@@ -481,6 +481,32 @@
       tdTag.style.color = "var(--badge-" + (n.tag || "general") + "-text)";
       tr.appendChild(tdTag);
 
+      var topicLabel = "";
+      var topicClusterId = (n.cluster != null && n.cluster !== -1) ? n.cluster : null;
+      if (topicClusterId != null && clusterLookup[topicClusterId]) {
+        topicLabel = clusterLookup[topicClusterId].label;
+      }
+      tr.setAttribute("data-topic", topicLabel.toLowerCase());
+      tr.setAttribute("data-cluster", topicClusterId != null ? topicClusterId : "");
+      var tdTopic = document.createElement("td");
+      tdTopic.className = "pt-cell-topic";
+      tdTopic.textContent = topicLabel || "—";
+      if (topicClusterId != null && clusterLookup[topicClusterId]) {
+        var theme = currentTheme();
+        var tColor = theme === "dark" ? clusterLookup[topicClusterId].color.dark : clusterLookup[topicClusterId].color.light;
+        tdTopic.style.color = tColor;
+        tdTopic.title = "Filter: " + topicLabel;
+        (function (cid) {
+          tdTopic.addEventListener("click", function (e) {
+            e.stopPropagation();
+            filterByCluster(cid);
+          });
+        })(topicClusterId);
+      } else {
+        tdTopic.style.color = "var(--text-muted)";
+      }
+      tr.appendChild(tdTopic);
+
       var tdDate = document.createElement("td");
       tdDate.className = "pt-cell-date";
       tdDate.textContent = (n.published || "").slice(0, 10);
@@ -539,6 +565,9 @@
       } else if (col === "tag") {
         av = a.getAttribute("data-tag") || "";
         bv = b.getAttribute("data-tag") || "";
+      } else if (col === "topic") {
+        av = a.getAttribute("data-topic") || "";
+        bv = b.getAttribute("data-topic") || "";
       } else {
         av = a.getAttribute("data-title") || "";
         bv = b.getAttribute("data-title") || "";

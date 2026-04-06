@@ -383,10 +383,10 @@ class TestSplitView:
         assert len(rows) == 3, f"Expected 3 table rows, got {len(rows)}"
 
     def test_table_columns(self, browser_page):
-        """Each row should have 4 cells: title, score, tag, date."""
+        """Each row should have 5 cells: title, score, tag, topic, date."""
         row = browser_page.query_selector("#paper-table-body tr")
         cells = row.query_selector_all("td")
-        assert len(cells) == 4, f"Expected 4 cells per row, got {len(cells)}"
+        assert len(cells) == 5, f"Expected 5 cells per row, got {len(cells)}"
 
     def test_table_default_sort_by_score(self, browser_page):
         """Default sort should be by score descending."""

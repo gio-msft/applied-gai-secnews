@@ -479,6 +479,7 @@ html, body {
 .pt-col-title { width: auto; }
 .pt-col-score { width: 70px; text-align: center; }
 .pt-col-tag   { width: 90px; }
+.pt-col-topic { width: 180px; }
 .pt-col-date  { width: 100px; }
 
 .sort-arrow {
@@ -535,6 +536,17 @@ html, body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+.pt-cell-topic {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.pt-cell-topic:hover {
+  text-decoration: underline;
 }
 
 .pt-cell-date {
