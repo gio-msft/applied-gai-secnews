@@ -28,8 +28,31 @@
         <span class="theme-icon-light">☀️</span>
         <span class="theme-icon-dark">🌙</span>
       </button>
+      <button id="help-toggle" class="icon-btn" title="About this site" aria-label="About this site">?</button>
     </div>
   </header>
+
+  <!-- Help modal -->
+  <div id="help-overlay" class="help-overlay hidden" aria-hidden="true">
+    <div class="help-modal" role="dialog" aria-labelledby="help-heading">
+      <button id="help-close" class="icon-btn help-close" title="Close" aria-label="Close">&times;</button>
+      <h2 id="help-heading">Paper Graph</h2>
+      <p class="help-subtitle">Interactive map of AI &amp; security research papers</p>
+      <ul class="help-list">
+        <li><strong>Nodes</strong> are papers — sized by interest score (1–10), colored by tag: <span style="color:var(--color-security)">Security</span>, <span style="color:var(--color-cyber)">Cyber</span>, <span style="color:var(--color-general)">General</span></li>
+        <li><strong>Edge layers</strong> (toolbar toggle):<br/>
+          &bull; <em>Citations</em> — who cites whom<br/>
+          &bull; <em>Shared Authors</em> — papers by the same authors<br/>
+          &bull; <em>Semantic</em> — embedding similarity + topic clusters</li>
+        <li><strong>Semantic mode</strong> rearranges nodes by meaning and shows <em>topic regions</em> — click a label to filter</li>
+        <li><strong>Click</strong> a node to open its detail card (score, authors, summary, links)</li>
+        <li><strong>Hover</strong> a node to highlight its neighbors</li>
+        <li><strong>Drag</strong> a node — its neighbors follow with spring physics</li>
+        <li><strong>Search</strong> papers by title from the toolbar</li>
+        <li><strong>Zoom/pan</strong> with scroll wheel and mouse drag</li>
+      </ul>
+    </div>
+  </div>
 
   <!-- Legend -->
   <div id="legend">

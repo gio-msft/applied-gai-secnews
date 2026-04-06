@@ -60,6 +60,23 @@
     applyTheme(currentTheme() === "dark" ? "light" : "dark");
   });
 
+  // --- Help modal --------------------------------------------------------
+  var helpOverlay = document.getElementById("help-overlay");
+  document.getElementById("help-toggle").addEventListener("click", function () {
+    helpOverlay.classList.toggle("hidden");
+    helpOverlay.setAttribute("aria-hidden", !helpOverlay.classList.contains("hidden"));
+  });
+  document.getElementById("help-close").addEventListener("click", function () {
+    helpOverlay.classList.add("hidden");
+    helpOverlay.setAttribute("aria-hidden", "true");
+  });
+  helpOverlay.addEventListener("click", function (e) {
+    if (e.target === helpOverlay) {
+      helpOverlay.classList.add("hidden");
+      helpOverlay.setAttribute("aria-hidden", "true");
+    }
+  });
+
   // Respect system preference on first load
   if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
     applyTheme("light");
