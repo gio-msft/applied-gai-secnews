@@ -32,6 +32,9 @@
   var originalPositions = {};  // paper_id → {x, y}
   var semanticPositions = {};  // paper_id → {x, y}
   var animatingLayout = false;
+  var clusterLookup = {};  // cluster_id → {label, color}
+  var clusterNodeSets = {};  // cluster_id → Set of node IDs
+  var filteredCluster = null;  // null or cluster_id
   let selectedNode = null;
   let draggedNode = null;
   let isDragging = false;
@@ -67,6 +70,11 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       graphData = data;
+      // Build cluster lookup and node sets
+      (graphData.topic_regions || []).forEach(function (r) {
+        clusterLookup[r.id] = { label: r.label, color: r.color };
+        clusterNodeSets[r.id] = new Set(r.papers || []);
+      });
       // Pre-compute dual position sets
       graphData.nodes.forEach(function (n) {
         originalPositions[n.id] = {
@@ -297,9 +305,19 @@
       renderer.refresh();
     });
 
-    // Node reducer for hover / selection dimming
+    // Node reducer for hover / selection / cluster filter dimming
     renderer.setSetting("nodeReducer", function (node, data) {
       var res = Object.assign({}, data);
+      var dimColor = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
+
+      // --- Cluster filter: hide nodes not in the filtered cluster ---
+      if (filteredCluster != null) {
+        var inCluster = clusterNodeSets[filteredCluster] && clusterNodeSets[filteredCluster].has(node);
+        if (!inCluster && node !== selectedNode) {
+          res.hidden = true;
+          return res;
+        }
+      }
 
       // Highlight the selected node — keep original color, overlay does the ring
       if (node === selectedNode) {
@@ -309,13 +327,13 @@
 
       if (highlightedNode && highlightedNode !== node) {
         if (!graph.hasEdge(highlightedNode, node) && !graph.hasEdge(node, highlightedNode)) {
-          res.color = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
+          res.color = dimColor;
           res.label = "";
         }
       }
       if (selectedNode && selectedNode !== node) {
         if (!graph.hasEdge(selectedNode, node) && !graph.hasEdge(node, selectedNode)) {
-          res.color = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
+          res.color = dimColor;
           res.label = "";
         }
       }
@@ -324,6 +342,18 @@
 
     renderer.setSetting("edgeReducer", function (edge, data) {
       var res = Object.assign({}, data);
+
+      // --- Cluster filter: hide edges not connecting cluster nodes ---
+      if (filteredCluster != null) {
+        var cSet = clusterNodeSets[filteredCluster];
+        var s = graph.source(edge);
+        var t = graph.target(edge);
+        if (!cSet || !cSet.has(s) || !cSet.has(t)) {
+          res.hidden = true;
+          return res;
+        }
+      }
+
       // In semantic mode, hide ALL edges unless a node is hovered/selected
       if (activeLayer === "semantic") {
         if (!highlightedNode && !selectedNode) {
@@ -497,35 +527,34 @@
     var theme = currentTheme();
 
     regions.forEach(function (region) {
-      if (!region.hull || region.hull.length < 3) return;
+      var rings = region.rings || (region.hull && region.hull.length >= 3 ? [region.hull] : []);
+      if (!rings.length) return;
       var color = theme === "dark" ? region.color.dark : region.color.light;
 
-      // Transform hull points from graph coords to viewport
-      var viewPts = region.hull.map(function (pt) {
-        return renderer.graphToViewport({
-          x: pt[0] * SCALE_FACTOR,
-          y: pt[1] * SCALE_FACTOR,
+      rings.forEach(function (ring) {
+        if (ring.length < 3) return;
+
+        // Transform ring points from graph coords to viewport
+        var viewPts = ring.map(function (pt) {
+          return renderer.graphToViewport({
+            x: pt[0] * SCALE_FACTOR,
+            y: pt[1] * SCALE_FACTOR,
+          });
         });
-      });
 
-      // Expand hull outward from centroid for padding
-      var cx = 0, cy = 0;
-      viewPts.forEach(function (p) { cx += p.x; cy += p.y; });
-      cx /= viewPts.length; cy /= viewPts.length;
-      var PAD = 10; // px padding around hull
-      var padded = viewPts.map(function (p) {
-        var dx = p.x - cx, dy = p.y - cy;
-        var d = Math.sqrt(dx * dx + dy * dy) || 1;
-        return { x: p.x + (dx / d) * PAD, y: p.y + (dy / d) * PAD };
+        // Draw the pre-smoothed shape directly (Shapely buffer is already smooth)
+        hullCtx.beginPath();
+        hullCtx.moveTo(viewPts[0].x, viewPts[0].y);
+        for (var i = 1; i < viewPts.length; i++) {
+          hullCtx.lineTo(viewPts[i].x, viewPts[i].y);
+        }
+        hullCtx.closePath();
+        hullCtx.fillStyle = hexToRgba(color, 0.07);
+        hullCtx.fill();
+        hullCtx.strokeStyle = hexToRgba(color, 0.25);
+        hullCtx.lineWidth = 1.5;
+        hullCtx.stroke();
       });
-
-      // Draw smooth closed Catmull-Rom spline through padded hull
-      drawSmoothClosed(hullCtx, padded);
-      hullCtx.fillStyle = hexToRgba(color, 0.07);
-      hullCtx.fill();
-      hullCtx.strokeStyle = hexToRgba(color, 0.25);
-      hullCtx.lineWidth = 1.5;
-      hullCtx.stroke();
 
       // Draw label at centroid
       if (region.centroid) {
@@ -541,6 +570,96 @@
       }
     });
   }
+
+  // --- Cluster filter ------------------------------------------------------
+  function filterByCluster(clusterId) {
+    if (filteredCluster === clusterId) {
+      clearClusterFilter();
+      return;
+    }
+    filteredCluster = clusterId;
+    selectedNode = null;
+    hideCard();
+    clearHighlight();
+
+    var region = clusterLookup[clusterId];
+    var banner = document.getElementById("cluster-filter-banner");
+    if (banner && region) {
+      var theme = currentTheme();
+      var cColor = theme === "dark" ? region.color.dark : region.color.light;
+      document.getElementById("cluster-filter-label").textContent = region.label;
+      banner.style.borderColor = cColor;
+      document.getElementById("cluster-filter-label").style.color = cColor;
+      banner.classList.remove("hidden");
+    }
+    if (renderer) renderer.refresh();
+  }
+
+  function clearClusterFilter() {
+    filteredCluster = null;
+    var banner = document.getElementById("cluster-filter-banner");
+    if (banner) banner.classList.add("hidden");
+    if (renderer) renderer.refresh();
+  }
+
+  // Expose for programmatic access (e.g., tests)
+  window.filterByCluster = filterByCluster;
+  window.clearClusterFilter = clearClusterFilter;
+
+  // Banner close button
+  document.getElementById("cluster-filter-clear").addEventListener("click", clearClusterFilter);
+
+  // --- Canvas label click detection (on graph container, above hull canvas) -
+  container.addEventListener("click", function (event) {
+    if (activeLayer !== "semantic" || !renderer) return;
+    var rect = container.getBoundingClientRect();
+    var mx = event.clientX - rect.left;
+    var my = event.clientY - rect.top;
+
+    var regions = graphData ? (graphData.topic_regions || []) : [];
+    for (var i = 0; i < regions.length; i++) {
+      var region = regions[i];
+      if (!region.centroid) continue;
+      var cView = renderer.graphToViewport({
+        x: region.centroid[0] * SCALE_FACTOR,
+        y: region.centroid[1] * SCALE_FACTOR,
+      });
+      // Hit test: within bounding box of the label text
+      var labelW = region.label.length * 7; // rough width estimate
+      var labelH = 18;
+      if (Math.abs(mx - cView.x) < labelW / 2 && Math.abs(my - cView.y) < labelH / 2) {
+        filterByCluster(region.id);
+        event.stopPropagation();
+        return;
+      }
+    }
+  });
+
+  // Change cursor on hover over labels
+  container.addEventListener("mousemove", function (event) {
+    if (activeLayer !== "semantic" || !renderer) return;
+    var rect = container.getBoundingClientRect();
+    var mx = event.clientX - rect.left;
+    var my = event.clientY - rect.top;
+    var hit = false;
+
+    var regions = graphData ? (graphData.topic_regions || []) : [];
+    for (var i = 0; i < regions.length; i++) {
+      var region = regions[i];
+      if (!region.centroid) continue;
+      var cView = renderer.graphToViewport({
+        x: region.centroid[0] * SCALE_FACTOR,
+        y: region.centroid[1] * SCALE_FACTOR,
+      });
+      var labelW = region.label.length * 7;
+      var labelH = 18;
+      if (Math.abs(mx - cView.x) < labelW / 2 && Math.abs(my - cView.y) < labelH / 2) {
+        hit = true;
+        break;
+      }
+    }
+    container.style.cursor = hit ? "pointer" : "";
+  });
 
   function hexToRgba(hex, alpha) {
     var r = parseInt(hex.slice(1, 3), 16);
@@ -587,6 +706,23 @@
     tagEl.className = "badge tag-badge tag-" + (data.tag || "general");
 
     document.getElementById("card-date").textContent = (data.published || "").slice(0, 10);
+
+    // Cluster (semantic topic) badge
+    var clusterEl = document.getElementById("card-cluster");
+    var region = clusterLookup[data.cluster];
+    if (region) {
+      var cColor = currentTheme() === "dark" ? region.color.dark : region.color.light;
+      clusterEl.textContent = region.label;
+      clusterEl.style.background = hexToRgba(cColor, 0.15);
+      clusterEl.style.color = cColor;
+      clusterEl.style.display = "inline-block";
+      clusterEl.style.cursor = "pointer";
+      clusterEl.onclick = function () { filterByCluster(data.cluster); };
+    } else {
+      clusterEl.style.display = "none";
+      clusterEl.onclick = null;
+    }
+
     document.getElementById("card-authors").innerHTML = "<strong>Authors:</strong> " + ((data.authors || []).join(", ") || "Unknown");
     document.getElementById("card-affiliations").innerHTML = "<strong>Affiliations:</strong> " + ((data.affiliations || []).join(", ") || "—");
 

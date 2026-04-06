@@ -326,125 +326,61 @@ def compute_similarity_edges(papers, embeddings,
 # Convex hull computation for topic regions
 # ---------------------------------------------------------------------------
 
-def compute_hulls(clusters, positions, pad=0.02):
-    """Compute concave hulls (alpha shapes) for each cluster.
+def compute_hulls(clusters, positions, radius=0.04, resolution=24):
+    """Compute smooth bubble outlines for each cluster using buffered union.
 
-    Uses Delaunay triangulation to create a tight boundary that avoids
-    enveloping distant outlier points — much less overlap than convex hulls.
+    Places a circle of *radius* around each node, merges them via
+    ``shapely.ops.unary_union``, and extracts the resulting smooth boundary.
+    Supports multi-polygon output if a cluster splits into sub-groups.
 
     *positions* is ``{paper_id: {"x": float, "y": float}}``.
-    *pad* expands each hull vertex outward from the centroid.
 
-    Mutates each cluster dict in-place, adding ``"hull"`` and
-    ``"centroid"`` keys.  Clusters with <3 members get no hull.
+    Mutates each cluster dict in-place, adding ``"rings"`` (list of
+    coordinate rings), ``"hull"`` (first/largest ring, for backward compat),
+    and ``"centroid"`` keys.
     """
-    from scipy.spatial import ConvexHull, Delaunay
+    from shapely.geometry import Point, MultiPolygon
+    from shapely.ops import unary_union
 
     for cluster in clusters:
         members = cluster["papers"]
-        pts = np.array([
-            [positions[pid]["x"], positions[pid]["y"]]
+        pts = [
+            (positions[pid]["x"], positions[pid]["y"])
             for pid in members if pid in positions
-        ])
-        if len(pts) < 3:
+        ]
+        if len(pts) < 2:
             cluster["hull"] = []
-            cx = float(pts[:, 0].mean()) if len(pts) > 0 else 0.0
-            cy = float(pts[:, 1].mean()) if len(pts) > 0 else 0.0
+            cluster["rings"] = []
+            cx = float(pts[0][0]) if pts else 0.0
+            cy = float(pts[0][1]) if pts else 0.0
             cluster["centroid"] = [cx, cy]
             continue
 
-        centroid = pts.mean(axis=0)
+        # Buffer each point and merge
+        circles = [Point(x, y).buffer(radius, resolution=resolution)
+                   for x, y in pts]
+        blob = unary_union(circles)
 
-        try:
-            hull_pts = _concave_hull(pts)
-        except Exception:
-            # Fallback to convex hull
-            try:
-                hull = ConvexHull(pts)
-                hull_pts = pts[hull.vertices]
-            except Exception:
-                cluster["hull"] = []
-                cluster["centroid"] = [float(centroid[0]), float(centroid[1])]
-                continue
+        # Extract rings from the resulting geometry
+        rings = []
+        polys = []
+        if blob.geom_type == "Polygon":
+            polys = [blob]
+        elif blob.geom_type == "MultiPolygon":
+            polys = list(blob.geoms)
 
-        # Pad outward from centroid
-        padded = []
-        for pt in hull_pts:
-            direction = pt - centroid
-            norm = np.linalg.norm(direction)
-            if norm > 0:
-                pt = pt + direction / norm * pad
-            padded.append([round(float(pt[0]), 6), round(float(pt[1]), 6)])
+        for poly in polys:
+            coords = list(poly.exterior.coords)
+            ring = [[round(x, 6), round(y, 6)] for x, y in coords]
+            rings.append(ring)
 
-        cluster["hull"] = padded
-        cluster["centroid"] = [round(float(centroid[0]), 6),
-                               round(float(centroid[1]), 6)]
+        # Compute centroid from the merged shape
+        cx = round(float(blob.centroid.x), 6)
+        cy = round(float(blob.centroid.y), 6)
 
-
-def _concave_hull(points, alpha_mult=1.5):
-    """Return an ordered boundary of a concave hull (alpha shape).
-
-    *alpha_mult* controls tightness: lower = tighter wrap.
-    Falls back to convex hull if alpha shape fails.
-    """
-    from scipy.spatial import Delaunay, ConvexHull
-    from collections import defaultdict
-
-    tri = Delaunay(points)
-
-    # Compute alpha as a multiple of the mean edge length
-    edges_all = set()
-    edge_lengths = []
-    for simplex in tri.simplices:
-        for i in range(3):
-            a, b = simplex[i], simplex[(i + 1) % 3]
-            edge = (min(a, b), max(a, b))
-            if edge not in edges_all:
-                edges_all.add(edge)
-                edge_lengths.append(np.linalg.norm(
-                    points[a] - points[b]))
-    mean_len = np.mean(edge_lengths)
-    alpha = alpha_mult * mean_len
-
-    # Keep only triangles whose longest edge is shorter than alpha
-    boundary_edges = defaultdict(int)
-    for simplex in tri.simplices:
-        verts = [simplex[0], simplex[1], simplex[2]]
-        lens = [
-            np.linalg.norm(points[verts[i]] - points[verts[(i+1) % 3]])
-            for i in range(3)
-        ]
-        if max(lens) <= alpha:
-            # All edges of this triangle are boundary candidates
-            for i in range(3):
-                edge = (min(verts[i], verts[(i+1) % 3]),
-                        max(verts[i], verts[(i+1) % 3]))
-                boundary_edges[edge] += 1
-
-    # Boundary edges appear in exactly one kept triangle
-    outline = [e for e, count in boundary_edges.items() if count == 1]
-    if not outline:
-        # Alpha too tight — fall back to convex
-        hull = ConvexHull(points)
-        return points[hull.vertices]
-
-    # Order the boundary edges into a polygon
-    adj = defaultdict(list)
-    for a, b in outline:
-        adj[a].append(b)
-        adj[b].append(a)
-
-    ordered = [outline[0][0]]
-    visited = {outline[0][0]}
-    while True:
-        current = ordered[-1]
-        nexts = [n for n in adj[current] if n not in visited]
-        if not nexts:
-            break
-        ordered.append(nexts[0])
-        visited.add(nexts[0])
-
-    return points[ordered]
+        cluster["rings"] = rings
+        cluster["hull"] = rings[0] if rings else []  # backward compat
+        cluster["centroid"] = [cx, cy]
 
 
 # ---------------------------------------------------------------------------
@@ -519,7 +455,8 @@ def _compute_layout(nodes, edge_sets, k=1.5, iterations=200, seed=42):
 
 def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
                 skip_citations=False, force_citations=False,
-                skip_embeddings=False, embedding_cache_path=EMBEDDING_CACHE_PATH):
+                skip_embeddings=False, embedding_cache_path=EMBEDDING_CACHE_PATH,
+                reuse_clusters=False):
     """Build the graph JSON and write to *output_path*."""
 
     paper_db = PaperDB(db_path)
@@ -564,9 +501,22 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
 
     if embeddings:
         # Topic clusters
-        topic_regions, paper_cluster = compute_topic_clusters(
-            all_papers, embeddings, oai_client,
-        )
+        if reuse_clusters and Path(output_path).exists():
+            logger.info("Reusing clusters from existing %s.", output_path)
+            prev = json.loads(Path(output_path).read_text())
+            topic_regions = [
+                {"id": r["id"], "label": r["label"], "color": r["color"],
+                 "papers": r["papers"]}
+                for r in prev.get("topic_regions", [])
+            ]
+            paper_cluster = {}
+            for r in topic_regions:
+                for pid in r["papers"]:
+                    paper_cluster[pid] = r["id"]
+        else:
+            topic_regions, paper_cluster = compute_topic_clusters(
+                all_papers, embeddings, oai_client,
+            )
         # Similarity edges
         similarity_edges = compute_similarity_edges(all_papers, embeddings)
 
@@ -655,6 +605,10 @@ if __name__ == "__main__":
         help="Skip embedding computation (no Azure OpenAI calls for embeddings).",
     )
     parser.add_argument(
+        "--reuse-clusters", action="store_true",
+        help="Reuse topic clusters/labels from existing graph.json; only recompute hulls.",
+    )
+    parser.add_argument(
         "--embedding-cache-path", default=EMBEDDING_CACHE_PATH,
         help="Path to embeddings cache (default: %(default)s).",
     )
@@ -680,4 +634,5 @@ if __name__ == "__main__":
         force_citations=args.force_citations,
         skip_embeddings=args.skip_embeddings,
         embedding_cache_path=args.embedding_cache_path,
+        reuse_clusters=args.reuse_clusters,
     )
