@@ -109,7 +109,7 @@
         x: (n.x || 0) * SCALE_FACTOR,
         y: (n.y || 0) * SCALE_FACTOR,
         size: size,
-        color: tagColor[theme],
+        color: hexToRgba(tagColor[theme], 0.8),
         label: "",
         tag: n.tag,
         // Store original data for the card
@@ -481,6 +481,8 @@
   // --- Hull rendering (topic region overlays) ------------------------------
   var hullCanvas = document.getElementById("hull-canvas");
   var hullCtx = hullCanvas ? hullCanvas.getContext("2d") : null;
+  var labelCanvas = document.getElementById("label-canvas");
+  var labelCtx = labelCanvas ? labelCanvas.getContext("2d") : null;
 
   /**
    * Draw a smooth closed curve through an array of {x,y} points
@@ -521,6 +523,17 @@
                          window.devicePixelRatio || 1, 0, 0);
     hullCtx.clearRect(0, 0, rect.width, rect.height);
 
+    // Also resize the label overlay canvas
+    if (labelCtx) {
+      labelCanvas.width = rect.width * (window.devicePixelRatio || 1);
+      labelCanvas.height = rect.height * (window.devicePixelRatio || 1);
+      labelCanvas.style.width = rect.width + "px";
+      labelCanvas.style.height = rect.height + "px";
+      labelCtx.setTransform(window.devicePixelRatio || 1, 0, 0,
+                           window.devicePixelRatio || 1, 0, 0);
+      labelCtx.clearRect(0, 0, rect.width, rect.height);
+    }
+
     if (activeLayer !== "semantic") return;
 
     var regions = graphData.topic_regions || [];
@@ -556,19 +569,24 @@
         hullCtx.stroke();
       });
 
-      // Draw label at centroid
-      if (region.centroid) {
+    });
+
+    // Draw topic labels on the overlay canvas (in front of nodes)
+    if (labelCtx) {
+      regions.forEach(function (region) {
+        if (!region.centroid) return;
+        var color = theme === "dark" ? region.color.dark : region.color.light;
         var cView = renderer.graphToViewport({
           x: region.centroid[0] * SCALE_FACTOR,
           y: region.centroid[1] * SCALE_FACTOR,
         });
-        hullCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
-        hullCtx.textAlign = "center";
-        hullCtx.textBaseline = "middle";
-        hullCtx.fillStyle = hexToRgba(color, 0.7);
-        hullCtx.fillText(region.label, cView.x, cView.y);
-      }
-    });
+        labelCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
+        labelCtx.textAlign = "center";
+        labelCtx.textBaseline = "middle";
+        labelCtx.fillStyle = hexToRgba(color, 0.7);
+        labelCtx.fillText(region.label, cView.x, cView.y);
+      });
+    }
   }
 
   // --- Cluster filter ------------------------------------------------------
@@ -678,7 +696,7 @@
     graph.forEachNode(function (node) {
       var data = graph.getNodeAttribute(node, "_data");
       var tagColor = TAG_COLORS[data.tag] || TAG_COLORS.general;
-      graph.setNodeAttribute(node, "color", tagColor[theme]);
+      graph.setNodeAttribute(node, "color", hexToRgba(tagColor[theme], 0.8));
     });
     renderer.setSetting("labelColor", { color: theme === "dark" ? "#e0e0e0" : "#333" });
   }

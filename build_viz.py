@@ -326,7 +326,54 @@ def compute_similarity_edges(papers, embeddings,
 # Convex hull computation for topic regions
 # ---------------------------------------------------------------------------
 
-def compute_hulls(clusters, positions, radius=0.04, resolution=24):
+def _densest_centroid(pts, radius=0.04):
+    """Return the centroid of the largest connected sub-group of *pts*.
+
+    Two points are considered connected when their buffered circles
+    (of the given *radius*) overlap, i.e. they are within ``2 * radius``
+    of each other.  The label is placed at the mean of the largest
+    connected component so it sits next to the biggest cluster of points
+    rather than in empty space between disjoint sub-groups.
+    """
+    from scipy.spatial.distance import cdist
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse import csr_matrix
+
+    arr = np.array(pts)
+    n = len(arr)
+    if n <= 2:
+        cx = round(float(arr[:, 0].mean()), 6)
+        cy = round(float(arr[:, 1].mean()), 6)
+        return cx, cy
+
+    # Build adjacency: points whose buffer circles overlap
+    dists = cdist(arr, arr)
+    adjacency = (dists <= 2 * radius).astype(np.int8)
+    np.fill_diagonal(adjacency, 0)
+
+    n_components, labels = connected_components(
+        csr_matrix(adjacency), directed=False
+    )
+
+    # Pick the largest component; if all components are the same size
+    # (i.e. every point is isolated), fall back to the global mean.
+    if n_components == 1:
+        biggest = np.arange(n)
+    else:
+        counts = np.bincount(labels)
+        max_count = counts.max()
+        if max_count == 1:
+            # All points are isolated — no dominant sub-group
+            biggest = np.arange(n)
+        else:
+            biggest = np.where(labels == counts.argmax())[0]
+
+    cx = round(float(arr[biggest, 0].mean()), 6)
+    cy = round(float(arr[biggest, 1].mean()), 6)
+    return cx, cy
+
+
+def compute_hulls(clusters, positions, radius=0.04, resolution=24, *, pad=None):
     """Compute smooth bubble outlines for each cluster using buffered union.
 
     Places a circle of *radius* around each node, merges them via
@@ -335,10 +382,14 @@ def compute_hulls(clusters, positions, radius=0.04, resolution=24):
 
     *positions* is ``{paper_id: {"x": float, "y": float}}``.
 
+    *pad* is accepted as a legacy alias for *radius*.
+
     Mutates each cluster dict in-place, adding ``"rings"`` (list of
     coordinate rings), ``"hull"`` (first/largest ring, for backward compat),
     and ``"centroid"`` keys.
     """
+    if pad is not None:
+        radius = pad
     from shapely.geometry import Point, MultiPolygon
     from shapely.ops import unary_union
 
@@ -374,9 +425,9 @@ def compute_hulls(clusters, positions, radius=0.04, resolution=24):
             ring = [[round(x, 6), round(y, 6)] for x, y in coords]
             rings.append(ring)
 
-        # Compute centroid from the merged shape
-        cx = round(float(blob.centroid.x), 6)
-        cy = round(float(blob.centroid.y), 6)
+        # Place label at the densest sub-region rather than the
+        # geometric centroid, which can land in empty space.
+        cx, cy = _densest_centroid(pts, radius=radius)
 
         cluster["rings"] = rings
         cluster["hull"] = rings[0] if rings else []  # backward compat

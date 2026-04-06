@@ -260,6 +260,16 @@ html, body {
   pointer-events: none;
 }
 
+#label-canvas {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;        /* sits in front of graph-container */
+  pointer-events: none;
+}
+
 /* --- Graph container ----------------------------------------------------- */
 #graph-container {
   position: fixed;

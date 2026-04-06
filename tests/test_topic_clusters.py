@@ -220,8 +220,8 @@ class TestComputeHulls:
         assert abs(cx - 0.5) < 0.1
         assert abs(cy - 0.5) < 0.1
 
-    def test_two_papers_no_hull(self):
-        """<3 papers can't form a hull."""
+    def test_two_papers_hull(self):
+        """Two papers produce a valid bubble via buffered union."""
         clusters = [{
             "id": 0,
             "label": "Small",
@@ -235,7 +235,7 @@ class TestComputeHulls:
 
         compute_hulls(clusters, positions)
 
-        assert clusters[0]["hull"] == []
+        assert len(clusters[0]["hull"]) >= 3  # buffered union produces a polygon
         assert "centroid" in clusters[0]
 
     def test_missing_position_skipped(self):
@@ -275,8 +275,8 @@ class TestComputeHulls:
             "c": {"x": 0.5, "y": 1.0},
         }
 
-        compute_hulls(clusters_small, positions, pad=0.0)
-        compute_hulls(clusters_large, positions, pad=0.1)
+        compute_hulls(clusters_small, positions, radius=0.01)
+        compute_hulls(clusters_large, positions, radius=0.1)
 
         # Padded hull should have vertices further from centroid
         def max_dist(hull, centroid):
