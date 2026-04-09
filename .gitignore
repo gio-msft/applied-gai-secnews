@@ -197,3 +197,5 @@ embeddings_cache.json
 screenshots/
 
 improvements.md
+
+*.eml
