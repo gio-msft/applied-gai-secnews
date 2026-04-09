@@ -60,7 +60,7 @@ arXiv API ──▶ execute_searches() ──▶ assemble_feeds() ──▶ prun
   "tag": "security",            // security | cyber | general
   "affiliations": ["MIT"],
   "relevant": true,             // newsletter-relevant?
-  "projects": ["backdoor-detection"],  // matched research projects
+  "projects": ["my-project"],    // matched research projects
   "interest_score": 8            // 1-10 interest/quality rating from LLM
 }
 ```
@@ -111,6 +111,9 @@ python build_viz.py
 # Build viz without embedding computation (no Azure OpenAI for embeddings)
 python build_viz.py --skip-citations --skip-embeddings
 
+# Re-fetch all citations regardless of cache
+python build_viz.py --force-citations
+
 # Rebuild viz reusing existing cluster labels (no LLM calls for labels)
 python build_viz.py --skip-citations --reuse-clusters
 
@@ -125,7 +128,7 @@ python -m pytest tests/ -v -m e2e
 
 - **Config-in-code**: Prompts, search queries, and constants live in `deepthought.py`, not in external config files (exception: `projects.json`).
 - **Error handling**: Per-record try/except in summarization and classification — never crash the batch. On classification error, default to `relevant=True` (fail-safe: don't drop papers). On project classification error, default to `[]`.
-- **Rate limiting**: 3-second sleep between LLM calls, 0.5–1.5s random sleep between arXiv requests.
+- **Rate limiting**: 3-second sleep between LLM calls, 2–4s random sleep between arXiv requests (with exponential backoff and jitter on 429/503 errors).
 - **State resilience**: Search state saved after each query; DB flushed on every mutation.
 - **Anti-hallucination**: Affiliations are validated against arXiv author metadata (≥50% last-name match required). Project IDs are validated against the known set.
 - **Tests**: Mock the LLM via `MagicMock` chain: `classifier.chat.completions.create.return_value`. Keep one real PDF (`papers/2505.24201v1.pdf`) for PDF-reading tests. Integration tests are marked `@pytest.mark.integration`.
@@ -180,6 +183,8 @@ docs/
 - **Semantic Scholar rate limits**: Free tier allows 100 req/5 min. For ~6K papers batched at 500/req, this is ~12 requests — well within limits. If rate-limited, set `S2_API_KEY` env var.
 - **Layout computation**: `networkx.spring_layout` with 6K+ nodes takes ~30–60s. Positions are pre-computed and baked into `graph.json` so the browser doesn't need to compute them.
 - **graph.json size**: With 6K+ nodes and metadata, expect ~5–15 MB. Single file for simplicity; if too large, can split into lazy-loaded chunks.
+- **Score filtering**: Only papers with `interest_score ≥ 5` are included in the visualization. Legacy papers without a score are treated as 5.
+- **Missing viz dependencies**: `shapely` and `umap-learn` are required by `build_viz.py` but are not in `requirements.txt` (they must be installed separately).
 
 ## Known Pitfalls (continued)
 - **`deepthought.py` instantiates `AzureOpenAI` at import time** (line ~40). Uses `DefaultAzureCredential` via `azure-identity` for Entra ID token-based auth (`azure_ad_token_provider`). The token is fetched lazily on first API call. Importing the module still requires `AZURE_OPENAI_ENDPOINT` in the environment — relevant for tests that import from it.

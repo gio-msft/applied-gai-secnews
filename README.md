@@ -11,12 +11,12 @@ This project powers the weekly "Last Week in GAI Security Research" newsletter.
    pip install -r requirements.txt
    ```
 
-2. **Azure OpenAI credentials** — create a `.env` file:
+2. **Azure OpenAI credentials** — authenticate via [Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/managed-identity) (the SDK uses `DefaultAzureCredential`). Create a `.env` file:
    ```
    AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-key
    AZURE_OPENAI_SUMMARY_MODEL_NAME=your-deployment-name
    ```
+   Ensure you are logged in via `az login` or have a managed identity configured.
 
 3. **Research projects** (optional) — edit `projects.json` to define internal research projects for paper-to-project matching:
    ```json
@@ -62,11 +62,19 @@ python build_viz.py
 # Use cached citations only (skip Semantic Scholar queries)
 python build_viz.py --skip-citations
 
+# Re-fetch all citations regardless of cache
+python build_viz.py --force-citations
+
 # Skip embedding computation (no Azure OpenAI calls for embeddings)
 python build_viz.py --skip-citations --skip-embeddings
+
+# Reuse topic cluster labels from previous graph.json (no LLM calls for labels)
+python build_viz.py --skip-citations --reuse-clusters
 ```
 
-The graph is written to `docs/data/graph.json` and served by the static site in `docs/`. Embeddings are cached in `embeddings_cache.json` so subsequent runs only embed new papers.
+The graph is written to `docs/data/graph.json` and served by the static site in `docs/`. Embeddings are cached in `embeddings_cache.json` so subsequent runs only embed new papers. Only papers with an interest score ≥ 5 are included in the visualization.
+
+> **Note:** The visualization builder requires `shapely` and `umap-learn`, which must be installed separately (`pip install shapely umap-learn`).
 
 ## Pipeline
 
@@ -81,7 +89,7 @@ The graph is written to `docs/data/graph.json` and served by the static site in 
 
 ## Output
 
-Each paper entry in the newsletter includes: emoji, title with source link, tag, authors, affiliations, a one-liner summary, 3 bullet-point findings, and matched research projects (if any).
+Papers are sorted by `interest_score` descending (ties broken by published date, newest first). Each entry includes: emoji, title with source link, tag, score, authors, affiliations, a one-liner summary, 3 bullet-point findings, and matched research projects (if any).
 
 ## Testing
 
@@ -91,6 +99,9 @@ python -m pytest tests/ -v
 
 # Integration tests (requires Azure OpenAI credentials)
 python -m pytest tests/ -v -m integration
+
+# E2E browser tests for the visualization (requires Playwright)
+python -m pytest tests/ -v -m e2e
 ```
 
 ## Project Structure
