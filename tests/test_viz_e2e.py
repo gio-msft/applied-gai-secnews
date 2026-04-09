@@ -542,3 +542,128 @@ class TestSplitViewScreenshots:
             shutil.copy2(str(tmp_path / name), os.path.join(screenshots_dir, name))
 
         browser.close()
+
+
+class TestClusterFilterInListView:
+    """Regression: clearing cluster filter in list view should show all rows."""
+
+    def test_clear_cluster_filter_resets_table_in_list_view(self, pw_instance, viz_server, tmp_path):
+        """Select a topic in graph → switch to list → clear filter → all rows visible."""
+        browser = pw_instance.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 800})
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(viz_server + "/index.html", wait_until="networkidle")
+        page.wait_for_selector("#loading-overlay", state="hidden", timeout=15000)
+
+        # 1. Switch to semantic layer
+        page.click('.layer-btn[data-layer="semantic"]')
+        page.wait_for_timeout(800)
+
+        # 2. Filter by cluster 0 ("LLM Security") via JS (label click needs coords)
+        page.evaluate("window.filterByCluster(0)")
+        page.wait_for_timeout(300)
+
+        # Banner should be visible
+        banner = page.query_selector("#cluster-filter-banner")
+        assert "hidden" not in (banner.get_attribute("class") or ""), \
+            "Banner should be visible after filtering"
+
+        # 3. Switch to list view
+        page.click('.view-btn[data-view="list"]')
+        page.wait_for_timeout(500)
+
+        # Screenshot: list view with cluster filter active
+        page.screenshot(path=str(tmp_path / "list-filtered.png"))
+
+        # Only cluster-0 papers should be visible (2 out of 3)
+        visible_before = page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert visible_before == 2, \
+            f"Expected 2 visible rows with cluster filter, got {visible_before}"
+
+        # 4. Clear the cluster filter via the banner close button
+        page.click("#cluster-filter-clear")
+        page.wait_for_timeout(300)
+
+        # Screenshot: list view after clearing filter
+        page.screenshot(path=str(tmp_path / "list-unfiltered.png"))
+
+        # ALL 3 rows should now be visible
+        visible_after = page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert visible_after == 3, \
+            f"Expected 3 visible rows after clearing filter, got {visible_after}"
+
+        # Banner should be hidden
+        assert "hidden" in (banner.get_attribute("class") or ""), \
+            "Banner should be hidden after clearing filter"
+
+        # No JS errors
+        assert errors == [], f"JS errors: {errors}"
+
+        # Save screenshots for review
+        screenshots_dir = os.path.join(PROJECT_ROOT, "screenshots")
+        os.makedirs(screenshots_dir, exist_ok=True)
+        for name in ("list-filtered.png", "list-unfiltered.png"):
+            shutil.copy2(str(tmp_path / name), os.path.join(screenshots_dir, name))
+
+        browser.close()
+
+    def test_toggle_cluster_filter_in_table_topic_column(self, pw_instance, viz_server, tmp_path):
+        """Click topic cell to filter, click again to clear — all rows should return."""
+        browser = pw_instance.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 800})
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(viz_server + "/index.html", wait_until="networkidle")
+        page.wait_for_selector("#loading-overlay", state="hidden", timeout=15000)
+
+        # Switch to semantic layer + list view
+        page.click('.layer-btn[data-layer="semantic"]')
+        page.wait_for_timeout(800)
+        page.click('.view-btn[data-view="list"]')
+        page.wait_for_timeout(500)
+
+        # Total rows before filtering
+        total = page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert total == 3
+
+        # Click the topic cell of the first visible row that has a cluster
+        page.evaluate("window.filterByCluster(0)")
+        page.wait_for_timeout(300)
+
+        filtered = page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert filtered == 2, f"Expected 2 filtered rows, got {filtered}"
+
+        # Toggle off by calling filterByCluster with the same ID (toggle behavior)
+        page.evaluate("window.filterByCluster(0)")
+        page.wait_for_timeout(300)
+
+        page.screenshot(path=str(tmp_path / "list-toggle-unfiltered.png"))
+
+        restored = page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert restored == 3, \
+            f"Expected 3 rows after toggling filter off, got {restored}"
+
+        assert errors == [], f"JS errors: {errors}"
+
+        screenshots_dir = os.path.join(PROJECT_ROOT, "screenshots")
+        os.makedirs(screenshots_dir, exist_ok=True)
+        shutil.copy2(str(tmp_path / "list-toggle-unfiltered.png"),
+                      os.path.join(screenshots_dir, "list-toggle-unfiltered.png"))
+
+        browser.close()

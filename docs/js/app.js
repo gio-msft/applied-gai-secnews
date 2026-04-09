@@ -1005,15 +1005,15 @@
       document.getElementById("cluster-filter-label").style.color = cColor;
       banner.classList.remove("hidden");
     }
-    if (renderer) renderer.refresh();
+    if (renderer && currentView !== "list") renderer.refresh();
   }
 
   function clearClusterFilter() {
     filteredCluster = null;
     var banner = document.getElementById("cluster-filter-banner");
     if (banner) banner.classList.add("hidden");
-    if (renderer) renderer.refresh();
     refreshTableVisibility();
+    if (renderer && currentView !== "list") renderer.refresh();
   }
 
   // Expose for programmatic access (e.g., tests)
@@ -1300,7 +1300,7 @@
   // --- Highlight / focus ---------------------------------------------------
   function highlightNode(nodeId) {
     selectedNode = nodeId;
-    renderer.refresh();
+    if (currentView !== "list") renderer.refresh();
     updateSelectionRing();
   }
 
@@ -1308,7 +1308,7 @@
     selectedNode = null;
     highlightedNode = null;
     selectionRing.classList.add("hidden");
-    renderer.refresh();
+    if (currentView !== "list") renderer.refresh();
   }
 
   // --- Search --------------------------------------------------------------
