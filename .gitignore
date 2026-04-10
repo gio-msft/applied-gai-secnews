@@ -193,6 +193,7 @@ papers/
 summaries/*.eml:OECustomProperty
 projects.json
 embeddings_cache.json
+search_state.json
 
 screenshots/
 

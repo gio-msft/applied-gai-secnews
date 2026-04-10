@@ -17,6 +17,7 @@ from itertools import combinations
 from pathlib import Path
 
 import numpy as np
+import openai
 
 import dotenv
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
@@ -263,20 +264,48 @@ def compute_topic_clusters(papers, embeddings, oai_client):
 
 def _generate_cluster_label(oai_client, sample_block):
     """Ask the LLM for a short topic label given paper summaries."""
-    resp = oai_client.chat.completions.create(
-        model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
-        messages=[
-            {"role": "system", "content": (
-                "You are a research librarian. Given paper titles and summaries "
-                "from a single thematic cluster, produce a short topic label "
-                "(2-5 words). Return ONLY the label, nothing else."
-            )},
-            {"role": "user", "content": sample_block},
-        ],
-        max_completion_tokens=20,
-        temperature=0.3,
-    )
-    return resp.choices[0].message.content.strip().strip('"').strip("'")
+    try:
+        resp = oai_client.chat.completions.create(
+            model=os.environ.get("AZURE_OPENAI_SUMMARY_MODEL_NAME"),
+            messages=[
+                {"role": "system", "content": (
+                    "You are a research librarian. Given paper titles and summaries "
+                    "from a single thematic cluster, produce a short topic label "
+                    "(2-5 words). Return ONLY the label, nothing else."
+                )},
+                {"role": "user", "content": sample_block},
+            ],
+            max_completion_tokens=20,
+            temperature=0.3,
+        )
+        return resp.choices[0].message.content.strip().strip('"').strip("'")
+    except openai.BadRequestError as exc:
+        logger.warning("Content filter triggered for cluster label, using fallback: %s", exc)
+        return _fallback_cluster_label(sample_block)
+
+
+def _fallback_cluster_label(sample_block):
+    """Extract a label from paper titles using keyword frequency."""
+    from collections import Counter
+    stopwords = {
+        "a", "an", "the", "and", "or", "of", "in", "on", "for", "to", "with",
+        "by", "from", "is", "are", "its", "via", "using", "based", "towards",
+        "against", "through", "into", "over", "how", "can", "do", "does", "not",
+        "their", "your", "we", "our", "as", "at", "be", "it", "that", "this",
+        "an", "no", "but", "what", "when", "where", "which", "who", "new",
+    }
+    words = Counter()
+    for line in sample_block.splitlines():
+        # Lines are formatted as "- Title: one_liner" — extract the title part
+        title = line.lstrip("- ").split(":")[0]
+        for word in title.split():
+            w = word.strip("(),\"'").lower()
+            if len(w) > 2 and w not in stopwords:
+                words[w] += 1
+    top = [w for w, _ in words.most_common(3)]
+    label = " ".join(top).title() if top else "Research Cluster"
+    logger.info("Fallback label generated: %s", label)
+    return label
 
 
 # ---------------------------------------------------------------------------
