@@ -40,6 +40,7 @@
   let isDragging = false;
   var activeTags = new Set(["security", "cyber", "general"]);
   var currentView = "graph"; // "graph" | "split" | "list"
+  var hoveredRegion = null;  // cluster_id when mouse is inside a topic hull
   var tableSortCol = "score";
   var tableSortDir = "desc";
   var tableFocusedRow = -1;
@@ -396,6 +397,15 @@
           res.label = "";
         }
       }
+
+      // --- Region hover: dim nodes outside the hovered topic region ---
+      if (hoveredRegion != null && !highlightedNode && !selectedNode) {
+        var inHovered = clusterNodeSets[hoveredRegion] && clusterNodeSets[hoveredRegion].has(node);
+        if (!inHovered) {
+          res.color = dimColor;
+          res.label = "";
+        }
+      }
       return res;
     });
 
@@ -424,6 +434,16 @@
       // In semantic mode, hide ALL edges unless a node is hovered/selected
       if (activeLayer === "semantic") {
         if (!highlightedNode && !selectedNode) {
+          // Region hover: show edges within hovered region, hide the rest
+          if (hoveredRegion != null) {
+            var hrSet = clusterNodeSets[hoveredRegion];
+            var hs = graph.source(edge);
+            var ht = graph.target(edge);
+            if (!hrSet || !hrSet.has(hs) || !hrSet.has(ht)) {
+              res.hidden = true;
+            }
+            return res;
+          }
           res.hidden = true;
           return res;
         }
@@ -960,9 +980,12 @@
         hullCtx.quadraticCurveTo(viewPts[i].x, viewPts[i].y, mx, my);
       }
       hullCtx.closePath();
-      hullCtx.fillStyle = hexToRgba(color, 0.07);
+      // Dim other regions when hovering or filtering a topic hull
+      var isDimmed = (hoveredRegion != null && region.id !== hoveredRegion) ||
+                     (filteredCluster != null && region.id !== filteredCluster);
+      hullCtx.fillStyle = hexToRgba(color, isDimmed ? 0.02 : 0.07);
       hullCtx.fill();
-      hullCtx.strokeStyle = hexToRgba(color, 0.25);
+      hullCtx.strokeStyle = hexToRgba(color, isDimmed ? 0.08 : 0.25);
       hullCtx.lineWidth = 1.5;
       hullCtx.stroke();
     });
@@ -974,10 +997,12 @@
         if (!centroid) return;
         var color = theme === "dark" ? region.color.dark : region.color.light;
         var cView = renderer.graphToViewport(centroid);
+        var isDimmed = (hoveredRegion != null && region.id !== hoveredRegion) ||
+                       (filteredCluster != null && region.id !== filteredCluster);
         labelCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
         labelCtx.textAlign = "center";
         labelCtx.textBaseline = "middle";
-        labelCtx.fillStyle = hexToRgba(color, 0.7);
+        labelCtx.fillStyle = hexToRgba(color, isDimmed ? 0.15 : 0.7);
         labelCtx.fillText(region.label, cView.x, cView.y);
       });
     }
@@ -1047,7 +1072,21 @@
     }
   });
 
-  // Change cursor on hover over labels
+  // --- Point-in-polygon (ray-casting) for hull hit-testing ---------------
+  function _pointInPolygon(px, py, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i].x, yi = poly[i].y;
+      var xj = poly[j].x, yj = poly[j].y;
+      if ((yi > py) !== (yj > py) &&
+          px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  // Change cursor on hover over labels + detect region hover for dimming
   container.addEventListener("mousemove", function (event) {
     if (activeLayer !== "semantic" || !renderer) return;
     var rect = container.getBoundingClientRect();
@@ -1056,6 +1095,8 @@
     var hit = false;
 
     var regions = graphData ? (graphData.topic_regions || []) : [];
+
+    // Label hit-test for pointer cursor
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
       var centroid = _liveRegionCentroid(region.papers || []);
@@ -1069,6 +1110,30 @@
       }
     }
     container.style.cursor = hit ? "pointer" : "";
+
+    // Region hull hover — disabled when a cluster filter is active
+    if (filteredCluster != null) {
+      if (hoveredRegion != null) {
+        hoveredRegion = null;
+        if (renderer) { renderer.refresh(); drawHulls(); }
+      }
+      return;
+    }
+    var newHovered = null;
+    for (var i = 0; i < regions.length; i++) {
+      var region = regions[i];
+      var hull = _computeLiveHull(region.papers || []);
+      if (!hull || hull.length < 3) continue;
+      var viewPts = hull.map(function (p) { return renderer.graphToViewport(p); });
+      if (_pointInPolygon(mx, my, viewPts)) {
+        newHovered = region.id;
+        break;
+      }
+    }
+    if (newHovered !== hoveredRegion) {
+      hoveredRegion = newHovered;
+      if (renderer) { renderer.refresh(); drawHulls(); }
+    }
   });
 
   function hexToRgba(hex, alpha) {
