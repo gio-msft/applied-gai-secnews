@@ -23,6 +23,10 @@
         <button class="view-btn" data-view="split" aria-pressed="false" title="Split view">⊟</button>
         <button class="view-btn" data-view="list" aria-pressed="false" title="List only">☰</button>
       </div>
+      <button id="trends-toggle" class="trends-cta" title="Research trends over time" aria-label="Open research trends">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 4,7 7,9 13,2"/><polyline points="9,2 13,2 13,6"/></svg>
+        <span>Trends</span>
+      </button>
     </div>
     <div class="toolbar-right">
       <div class="search-box">
@@ -57,8 +61,45 @@
         <li><strong>Sort</strong> the table by title, score, tag, or date (click column headers)</li>
         <li><strong>Search</strong> papers by title from the toolbar — filters both graph and table</li>
         <li><strong>Zoom/pan</strong> with scroll wheel and mouse drag</li>
+        <li><strong>Trends</strong> button (📈) opens a timeline of topic volume and a parallel chart of trending title keywords — hover streams/lines for weekly counts, click a topic to filter by cluster or a keyword to search the graph</li>
       </ul>
     </div>
+  </div>
+
+  <!-- Trends overlay -->
+  <div id="trends-overlay" class="trends-overlay hidden" aria-hidden="true">
+    <div class="trends-modal" role="dialog" aria-labelledby="trends-heading">
+      <button id="trends-close" class="icon-btn trends-close" title="Close" aria-label="Close">&times;</button>
+      <h2 id="trends-heading">Research Trends</h2>
+      <p class="trends-subtitle">Weekly topic volume across the corpus — click any topic to filter the graph</p>
+      <div class="trends-charts">
+        <section class="trends-chart-panel">
+          <h3 class="trends-chart-title">Topics (clusters) <span class="trends-panel-hint">weekly volume</span></h3>
+          <div id="trends-streamgraph" class="trends-streamgraph"></div>
+        </section>
+        <section class="trends-chart-panel">
+          <h3 class="trends-chart-title">Title keywords <span class="trends-panel-hint">top terms, weekly</span></h3>
+          <div id="trends-kw-legend" class="trends-kw-legend"></div>
+          <div id="trends-keywords" class="trends-streamgraph"></div>
+        </section>
+      </div>
+      <div class="trends-grid">
+        <section class="trends-panel" id="trends-rising-panel">
+          <h3>🔥 Rising topics <span class="trends-panel-hint">last 4 weeks vs prior 4</span></h3>
+          <ol id="trends-rising" class="trends-list"></ol>
+        </section>
+        <section class="trends-panel" id="trends-cooling-panel">
+          <h3>❄️ Cooling topics <span class="trends-panel-hint">last 4 weeks vs prior 4</span></h3>
+          <ol id="trends-cooling" class="trends-list"></ol>
+        </section>
+      </div>
+      <section class="trends-panel">
+        <h3>Tag share over time</h3>
+        <div id="trends-tagshare" class="trends-tagshare"></div>
+      </section>
+      <p id="trends-caption" class="trends-caption"></p>
+    </div>
+    <div id="trends-tooltip" class="trends-tooltip hidden"></div>
   </div>
 
   <!-- Legend (clickable tag filter) -->
@@ -139,8 +180,10 @@
   <!-- Dependencies from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sigma@3.0.2/dist/sigma.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 
   <!-- App -->
   <script src="js/app.js"></script>
+  <script src="js/trends.js"></script>
 </body>
 </html>

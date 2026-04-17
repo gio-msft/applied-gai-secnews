@@ -115,6 +115,9 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       graphData = data;
+      // Expose loaded graph + helpers for secondary views (e.g., Trends overlay)
+      window.__graphData = data;
+      window.__currentTheme = currentTheme;
       // Build cluster lookup and node sets
       (graphData.topic_regions || []).forEach(function (r) {
         clusterLookup[r.id] = { label: r.label, color: r.color };
@@ -1421,6 +1424,13 @@
     refreshTableVisibility();
     tableSelectRow(null);
   });
+
+  // Expose a programmatic way to set the search query (used by the Trends overlay)
+  window.setSearch = function (term) {
+    searchInput.value = term == null ? "" : String(term);
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    try { searchInput.focus(); } catch (e) {}
+  };
 
   // --- Card panel resize ---------------------------------------------------
   (function () {
