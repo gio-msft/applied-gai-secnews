@@ -35,6 +35,7 @@
   var clusterLookup = {};  // cluster_id → {label, color}
   var clusterNodeSets = {};  // cluster_id → Set of node IDs
   var filteredCluster = null;  // null or cluster_id
+  var placedLabelPositions = {};  // region.id → {x, y, hw, hh} — last drawn positions
   let selectedNode = null;
   let draggedNode = null;
   let isDragging = false;
@@ -175,12 +176,13 @@
       var size = MIN_NODE_SIZE + ((score - 1) / 9) * (MAX_NODE_SIZE - MIN_NODE_SIZE);
       var tagColor = TAG_COLORS[n.tag] || TAG_COLORS.general;
       var theme = currentTheme();
+      var nodeAlpha = (n.tag === "general") ? 0.9 : 0.65;
 
       graph.addNode(n.id, {
         x: (n.x || 0) * SCALE_FACTOR,
         y: (n.y || 0) * SCALE_FACTOR,
         size: size,
-        color: hexToRgba(tagColor[theme], 0.8),
+        color: hexToRgba(tagColor[theme], nodeAlpha),
         label: "",
         tag: n.tag,
         // Store original data for the card
@@ -1047,15 +1049,29 @@
       // Dim other regions when hovering or filtering a topic hull
       var isDimmed = (hoveredRegion != null && region.id !== hoveredRegion) ||
                      (filteredCluster != null && region.id !== filteredCluster);
-      hullCtx.fillStyle = hexToRgba(color, isDimmed ? 0.02 : 0.07);
+      hullCtx.fillStyle = hexToRgba(color, isDimmed ? 0.014 : 0.05);
       hullCtx.fill();
-      hullCtx.strokeStyle = hexToRgba(color, isDimmed ? 0.08 : 0.25);
+      hullCtx.strokeStyle = hexToRgba(color, isDimmed ? 0.058 : 0.058);
       hullCtx.lineWidth = 1.5;
       hullCtx.stroke();
     });
 
     // Draw topic labels on the overlay canvas (in front of nodes)
     if (labelCtx) {
+      var placedLabels = []; // array of {x, y, hw, hh} for overlap detection
+      placedLabelPositions = {}; // reset for this frame
+
+      function _overlapsAny(lx, ly, hw, hh) {
+        for (var p = 0; p < placedLabels.length; p++) {
+          var pl = placedLabels[p];
+          if (Math.abs(lx - pl.x) < hw + pl.hw + 4 &&
+              Math.abs(ly - pl.y) < hh + pl.hh + 1) {
+            return true;
+          }
+        }
+        return false;
+      }
+
       regions.forEach(function (region) {
         var visPapers = _visiblePapers(region.papers || []);
         if (visPapers.length === 0) return;
@@ -1065,11 +1081,40 @@
         var cView = renderer.graphToViewport(centroid);
         var isDimmed = (hoveredRegion != null && region.id !== hoveredRegion) ||
                        (filteredCluster != null && region.id !== filteredCluster);
-        labelCtx.font = "bold 13px system-ui, -apple-system, sans-serif";
+        labelCtx.font = "bold 11px system-ui, -apple-system, sans-serif";
+        var tw = labelCtx.measureText(region.label).width;
+        var hw = tw / 2 + 4; // half-width with padding
+        var hh = 8;          // half-height
+
+        // Try original position, then small offsets to resolve overlaps
+        var lx = cView.x, ly = cView.y;
+        var stepV = hh * 2 + 2;
+        if (_overlapsAny(lx, ly, hw, hh)) {
+          // Try up, down, then diagonal — max 3 rings
+          var found = false;
+          for (var ring = 1; ring <= 3 && !found; ring++) {
+            var candidates = [
+              {dx: 0, dy: -ring * stepV},
+              {dx: 0, dy:  ring * stepV},
+              {dx: -ring * 20, dy: -ring * stepV},
+              {dx:  ring * 20, dy: -ring * stepV},
+            ];
+            for (var c = 0; c < candidates.length; c++) {
+              var cx = cView.x + candidates[c].dx;
+              var cy = cView.y + candidates[c].dy;
+              if (!_overlapsAny(cx, cy, hw, hh)) {
+                lx = cx; ly = cy; found = true; break;
+              }
+            }
+          }
+        }
+
+        placedLabels.push({ x: lx, y: ly, hw: hw, hh: hh });
+        placedLabelPositions[region.id] = { x: lx, y: ly, hw: hw, hh: hh };
         labelCtx.textAlign = "center";
         labelCtx.textBaseline = "middle";
         labelCtx.fillStyle = hexToRgba(color, isDimmed ? 0.15 : 0.7);
-        labelCtx.fillText(region.label, cView.x, cView.y);
+        labelCtx.fillText(region.label, lx, ly);
       });
     }
   }
@@ -1130,13 +1175,10 @@
       var region = regions[i];
       var visPapers = _visiblePapers(region.papers || []);
       if (visPapers.length === 0) continue;
-      var centroid = _liveRegionCentroid(visPapers);
-      if (!centroid) continue;
-      var cView = renderer.graphToViewport(centroid);
-      // Hit test: within bounding box of the label text
-      var labelW = region.label.length * 7; // rough width estimate
-      var labelH = 18;
-      if (Math.abs(mx - cView.x) < labelW / 2 && Math.abs(my - cView.y) < labelH / 2) {
+      // Use the actual drawn label position if available
+      var pl = placedLabelPositions[region.id];
+      if (!pl) continue;
+      if (Math.abs(mx - pl.x) < pl.hw && Math.abs(my - pl.y) < pl.hh) {
         filterByCluster(region.id);
         event.stopPropagation();
         return;
@@ -1173,12 +1215,9 @@
       var region = regions[i];
       var visPapers = _visiblePapers(region.papers || []);
       if (visPapers.length === 0) continue;
-      var centroid = _liveRegionCentroid(visPapers);
-      if (!centroid) continue;
-      var cView = renderer.graphToViewport(centroid);
-      var labelW = region.label.length * 7;
-      var labelH = 18;
-      if (Math.abs(mx - cView.x) < labelW / 2 && Math.abs(my - cView.y) < labelH / 2) {
+      var pl = placedLabelPositions[region.id];
+      if (!pl) continue;
+      if (Math.abs(mx - pl.x) < pl.hw && Math.abs(my - pl.y) < pl.hh) {
         hit = true;
         break;
       }
@@ -1229,7 +1268,8 @@
     graph.forEachNode(function (node) {
       var data = graph.getNodeAttribute(node, "_data");
       var tagColor = TAG_COLORS[data.tag] || TAG_COLORS.general;
-      graph.setNodeAttribute(node, "color", hexToRgba(tagColor[theme], 0.8));
+      var nodeAlpha = (data.tag === "general") ? 0.9 : 0.7;
+      graph.setNodeAttribute(node, "color", hexToRgba(tagColor[theme], nodeAlpha));
     });
     renderer.setSetting("labelColor", { color: theme === "dark" ? "#e0e0e0" : "#333" });
   }

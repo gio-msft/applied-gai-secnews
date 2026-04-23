@@ -698,19 +698,19 @@ html, body {
 /* --- Cluster filter banner ----------------------------------------------- */
 .cluster-filter-banner {
   position: fixed;
-  bottom: 60px;
+  bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 5px 12px;
   background: var(--bg-surface);
   border: 2px solid var(--accent-solid);
   border-radius: 10px;
   box-shadow: var(--shadow-card);
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-primary);
   transition: opacity 0.2s ease;
 }
@@ -720,8 +720,8 @@ html, body {
 }
 
 .cluster-filter-banner .icon-btn {
-  font-size: 18px;
-  margin-left: 4px;
+  font-size: 15px;
+  margin-left: 2px;
 }
 
 /* --- Selection ring (gradient halo around selected node) ----------------- */
