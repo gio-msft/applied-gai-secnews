@@ -38,6 +38,7 @@
   let selectedNode = null;
   let draggedNode = null;
   let isDragging = false;
+  var nodeClickHandled = false;  // flag to prevent container click from overriding clickNode
   var activeTags = new Set(["security", "cyber", "general"]);
   var currentView = "graph"; // "graph" | "split" | "list"
   var hoveredRegion = null;  // cluster_id when mouse is inside a topic hull
@@ -316,6 +317,7 @@
 
     // --- Event: click node --------------------------------------------------
     renderer.on("clickNode", function (event) {
+      nodeClickHandled = true;
       var nodeId = event.node;
       selectedNode = nodeId;
       var attrs = graph.getNodeAttributes(nodeId);
@@ -473,6 +475,12 @@
       if (selectedNode) updateSelectionRing();
       drawHulls();
     });
+
+    // Expose internals for e2e tests
+    window._sigmaRenderer = renderer;
+    window._graph = graph;
+    Object.defineProperty(window, '_selectedNode', { get: function () { return selectedNode; } });
+    Object.defineProperty(window, '_filteredCluster', { get: function () { return filteredCluster; } });
   }
 
   // --- Paper table ---------------------------------------------------------
@@ -1053,6 +1061,10 @@
 
   // --- Canvas label click detection (on graph container, above hull canvas) -
   container.addEventListener("click", function (event) {
+    if (nodeClickHandled) {
+      nodeClickHandled = false;
+      return;
+    }
     if (activeLayer !== "semantic" || !renderer) return;
     var rect = container.getBoundingClientRect();
     var mx = event.clientX - rect.left;

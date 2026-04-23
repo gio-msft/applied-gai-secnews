@@ -667,3 +667,141 @@ class TestClusterFilterInListView:
                       os.path.join(screenshots_dir, "list-toggle-unfiltered.png"))
 
         browser.close()
+
+
+class TestNodeClickNearLabel:
+    """Regression: clicking a node near a cluster label should open the card,
+    not activate the cluster filter (GitHub issue: zoomed-in semantic view)."""
+
+    # Custom graph with a node sitting right at the cluster centroid so the
+    # label hit-box overlaps the node.
+    OVERLAP_GRAPH = {
+        "nodes": [
+            {
+                "id": "overlap-node",
+                "title": "Paper Right On Centroid",
+                "authors": ["Test Author"],
+                "affiliations": ["TestU"],
+                "url": "http://arxiv.org/pdf/overlap.pdf",
+                "published": "2026-01-15T10:00:00Z",
+                "emoji": "📌",
+                "tag": "security",
+                "one_liner": "This node sits at the cluster centroid.",
+                "points": ["Point A", "Point B"],
+                "interest_score": 9,
+                "projects": [],
+                "relevant": True,
+                "x": 0.0,
+                "y": 0.0,
+                "semantic_x": 0.0,   # exactly at centroid
+                "semantic_y": 0.0,
+                "cluster": 0,
+            },
+            {
+                "id": "far-node",
+                "title": "Far Away Paper",
+                "authors": ["Other Author"],
+                "affiliations": ["OtherU"],
+                "url": "http://arxiv.org/pdf/far.pdf",
+                "published": "2026-01-16T10:00:00Z",
+                "emoji": "🔭",
+                "tag": "security",
+                "one_liner": "This node is far from the centroid.",
+                "points": ["Point C"],
+                "interest_score": 5,
+                "projects": [],
+                "relevant": True,
+                "x": 0.8,
+                "y": 0.8,
+                "semantic_x": 0.8,
+                "semantic_y": 0.8,
+                "cluster": 0,
+            },
+        ],
+        "citation_edges": [],
+        "author_edges": [],
+        "similarity_edges": [
+            {"source": "overlap-node", "target": "far-node", "weight": 0.7},
+        ],
+        "topic_regions": [
+            {
+                "id": 0,
+                "label": "Security of Tool-Using LLM Agents",
+                "color": {"light": "#4f6df5", "dark": "#6b8aff"},
+                "papers": ["overlap-node", "far-node"],
+                "hull": [[-0.3, -0.3], [0.9, -0.3], [0.9, 0.9], [-0.3, 0.9]],
+                "centroid": [0.0, 0.0],
+            },
+        ],
+    }
+
+    def test_click_node_at_centroid_opens_card_not_filter(self, pw_instance, tmp_path):
+        """Click a node that overlaps the cluster label → card should open,
+        cluster filter should NOT activate."""
+        import functools
+
+        # Spin up a dedicated server with our overlap graph
+        dest = str(tmp_path / "viz")
+        shutil.copytree(VIZ_DIR, dest)
+        data_dir = os.path.join(dest, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        with open(os.path.join(data_dir, "graph.json"), "w") as f:
+            json.dump(self.OVERLAP_GRAPH, f)
+
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=dest)
+        server = http.server.HTTPServer(("127.0.0.1", 0), handler)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        try:
+            browser = pw_instance.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1280, "height": 800})
+            errors = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="networkidle")
+            page.wait_for_selector("#loading-overlay", state="hidden", timeout=15000)
+
+            # Switch to semantic layer
+            page.click('.layer-btn[data-layer="semantic"]')
+            page.wait_for_timeout(800)
+
+            # Get the viewport coordinates of the "overlap-node" which sits
+            # right at the cluster centroid (overlapping the label hit-box).
+            coords = page.evaluate("""() => {
+                const pos = window._sigmaRenderer.graphToViewport(
+                    window._graph.getNodeAttributes('overlap-node')
+                );
+                const container = document.getElementById('graph-container');
+                const rect = container.getBoundingClientRect();
+                return { x: rect.left + pos.x, y: rect.top + pos.y };
+            }""")
+
+            # Click at the node's position using Playwright's real mouse
+            page.mouse.click(coords["x"], coords["y"])
+            page.wait_for_timeout(400)
+
+            # Check state
+            result = page.evaluate("""() => {
+                const card = document.getElementById('card-panel');
+                const banner = document.getElementById('cluster-filter-banner');
+                return {
+                    cardVisible: !card.classList.contains('hidden'),
+                    bannerVisible: !banner.classList.contains('hidden'),
+                    selectedNode: window._selectedNode,
+                    filteredCluster: window._filteredCluster,
+                };
+            }""")
+
+            page.screenshot(path=str(tmp_path / "node-click-at-centroid.png"))
+
+            assert result["cardVisible"], \
+                "Card panel should be visible after clicking a node"
+            assert not result["bannerVisible"], \
+                "Cluster filter banner should NOT activate when clicking a node"
+
+            assert errors == [], f"JS errors: {errors}"
+
+        finally:
+            server.shutdown()
+            browser.close()
