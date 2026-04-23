@@ -490,7 +490,7 @@ html, body {
 /* --- Main split layout container ----------------------------------------- */
 #main-container {
   position: fixed;
-  top: 56px;
+  top: 56px; /* JS ResizeObserver keeps this in sync with toolbar */
   left: 0;
   right: 0;
   bottom: 0;
@@ -1007,15 +1007,39 @@ html, body {
 }
 
 /* --- Responsive: mobile -------------------------------------------------- */
-@media (max-width: 768px) {
-  #toolbar {
-    padding: 0 12px;
-    height: 48px;
-    flex-wrap: wrap;
-  }
-  .toolbar-title { font-size: 14px; }
+
+/* Medium screens: compact toolbar elements */
+@media (max-width: 900px) {
+  .toolbar-title { display: none; }
+  .toolbar-left, .toolbar-right { gap: 8px; }
+  #toolbar { padding: 0 12px; }
   .layer-btn { padding: 5px 10px; font-size: 12px; }
   #search-input { width: 140px; font-size: 12px; }
+  .trends-cta span { display: none; }
+}
+
+/* Small screens: two-row toolbar */
+@media (max-width: 640px) {
+  #toolbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .toolbar-left, .toolbar-right { gap: 6px; }
+  .toolbar-left {
+    order: 1;
+    flex: 1 1 auto;
+  }
+  .toolbar-right {
+    order: 2;
+    flex: 0 0 auto;
+  }
+  .toolbar-logo { width: 20px; height: 20px; }
+
+  .layer-btn { padding: 4px 8px; font-size: 11px; }
+  .view-btn { padding: 4px 8px; font-size: 12px; }
+  #search-input { width: 100px; font-size: 11px; padding: 5px 28px 5px 8px; }
 
   .card-panel {
     top: auto;
@@ -1035,16 +1059,21 @@ html, body {
     transform: translateY(100%);
   }
 
-  #main-container {
-    top: 48px;
-  }
-
   /* Force graph-only or list-only on mobile — no split */
   #main-container.view-split {
     grid-template-columns: 1fr;
   }
   #main-container.view-split #paper-table-container {
     display: none;
+  }
+
+  /* Compact timeframe filter */
+  .timeframe-filter {
+    padding: 6px 10px;
+  }
+  .tf-dates input[type="date"] {
+    width: 105px;
+    font-size: 10px;
   }
 }
 
@@ -1342,6 +1371,5 @@ html, body {
 @media (max-width: 720px) {
   .trends-grid { grid-template-columns: 1fr; }
   .trends-modal { padding: 18px; }
-  .trends-cta span { display: none; }
 }
 

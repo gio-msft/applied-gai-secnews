@@ -100,6 +100,18 @@
     applyTheme("light");
   }
 
+  // --- Sync main-container top with toolbar height -------------------------
+  (function () {
+    var toolbar = document.getElementById("toolbar");
+    function syncTop() {
+      mainContainer.style.top = toolbar.offsetHeight + "px";
+    }
+    syncTop();
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(syncTop).observe(toolbar);
+    }
+  })();
+
   // --- Legend tag filter ----------------------------------------------------
   document.querySelectorAll("#legend .legend-item").forEach(function (item) {
     item.addEventListener("click", function () {
