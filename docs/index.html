@@ -109,6 +109,22 @@
     <div class="legend-item active" data-tag="general"><span class="legend-dot" style="background:var(--color-general)"></span> General</div>
   </div>
 
+  <!-- Timeframe filter -->
+  <div id="timeframe-filter" class="timeframe-filter">
+    <div class="tf-row">
+      <div class="tf-dates">
+        <input type="date" id="tf-start" aria-label="Start date" />
+        <span class="tf-sep">–</span>
+        <input type="date" id="tf-end" aria-label="End date" />
+      </div>
+      <button id="tf-reset" class="tf-reset icon-btn" title="Reset date range" aria-label="Reset date range">↺</button>
+    </div>
+    <div class="tf-slider">
+      <input type="range" id="tf-range-min" min="0" max="1" step="1" value="0" aria-label="Start date slider" />
+      <input type="range" id="tf-range-max" min="0" max="1" step="1" value="1" aria-label="End date slider" />
+    </div>
+  </div>
+
   <!-- Main split layout container -->
   <div id="main-container" class="view-graph">
     <!-- Graph pane (hull canvas + graph + label canvas) -->

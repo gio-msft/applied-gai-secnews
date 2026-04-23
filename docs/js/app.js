@@ -45,6 +45,9 @@
   var tableSortCol = "score";
   var tableSortDir = "desc";
   var tableFocusedRow = -1;
+  var dateFilterMin = null;  // "YYYY-MM-DD" or null (no filter)
+  var dateFilterMax = null;
+  var allDates = [];         // sorted list of unique date strings from data
 
   // --- DOM refs ------------------------------------------------------------
   const container = document.getElementById("graph-container");
@@ -54,6 +57,11 @@
   const cardPanel = document.getElementById("card-panel");
   const searchInput = document.getElementById("search-input");
   const tableBody = document.getElementById("paper-table-body");
+  const tfStart = document.getElementById("tf-start");
+  const tfEnd = document.getElementById("tf-end");
+  const tfRangeMin = document.getElementById("tf-range-min");
+  const tfRangeMax = document.getElementById("tf-range-max");
+  const tfReset = document.getElementById("tf-reset");
 
   // --- Theme ---------------------------------------------------------------
   function currentTheme() {
@@ -137,6 +145,7 @@
       });
       initGraph();
       buildTable();
+      initTimeframeFilter();
       loadingOverlay.style.display = "none";
     })
     .catch(function (err) {
@@ -373,6 +382,13 @@
       if (!activeTags.has(nodeTag)) {
         res.hidden = true;
         return res;
+      }
+
+      // --- Date filter: hide nodes outside the selected date range ---
+      if (dateFilterMin || dateFilterMax) {
+        var pubDate = (data._data && data._data.published || "").slice(0, 10);
+        if (dateFilterMin && pubDate < dateFilterMin) { res.hidden = true; return res; }
+        if (dateFilterMax && pubDate > dateFilterMax) { res.hidden = true; return res; }
       }
 
       // --- Cluster filter: hide nodes not in the filtered cluster ---
@@ -677,6 +693,13 @@
       // Tag filter
       if (!activeTags.has(tag)) hidden = true;
 
+      // Date filter
+      if (!hidden && (dateFilterMin || dateFilterMax)) {
+        var rowDate = row.getAttribute("data-date") || "";
+        if (dateFilterMin && rowDate < dateFilterMin) hidden = true;
+        if (dateFilterMax && rowDate > dateFilterMax) hidden = true;
+      }
+
       // Cluster filter
       if (!hidden && filteredCluster != null) {
         var inCluster = clusterNodeSets[filteredCluster] && clusterNodeSets[filteredCluster].has(nodeId);
@@ -927,6 +950,24 @@
     return _convexHull(expanded);
   }
 
+  /** Filter paper IDs to only those currently visible (not hidden by tag/date). */
+  function _visiblePapers(paperIds) {
+    return paperIds.filter(function (id) {
+      if (!graph.hasNode(id)) return false;
+      var d = graph.getNodeAttribute(id, "_data");
+      // Tag filter
+      var tag = (d && d.tag) || "general";
+      if (!activeTags.has(tag)) return false;
+      // Date filter
+      if (dateFilterMin || dateFilterMax) {
+        var pub = (d && d.published || "").slice(0, 10);
+        if (dateFilterMin && pub < dateFilterMin) return false;
+        if (dateFilterMax && pub > dateFilterMax) return false;
+      }
+      return true;
+    });
+  }
+
   /** Centroid of cluster nodes from their current graph positions. */
   function _liveRegionCentroid(paperIds) {
     var cx = 0, cy = 0, n = 0;
@@ -968,7 +1009,7 @@
     var theme = currentTheme();
 
     regions.forEach(function (region) {
-      var papers = region.papers || [];
+      var papers = _visiblePapers(region.papers || []);
       var hull = _computeLiveHull(papers);
       if (!hull || hull.length < 3) return;
       var color = theme === "dark" ? region.color.dark : region.color.light;
@@ -1004,7 +1045,9 @@
     // Draw topic labels on the overlay canvas (in front of nodes)
     if (labelCtx) {
       regions.forEach(function (region) {
-        var centroid = _liveRegionCentroid(region.papers || []);
+        var visPapers = _visiblePapers(region.papers || []);
+        if (visPapers.length === 0) return;
+        var centroid = _liveRegionCentroid(visPapers);
         if (!centroid) return;
         var color = theme === "dark" ? region.color.dark : region.color.light;
         var cView = renderer.graphToViewport(centroid);
@@ -1073,7 +1116,9 @@
     var regions = graphData ? (graphData.topic_regions || []) : [];
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
-      var centroid = _liveRegionCentroid(region.papers || []);
+      var visPapers = _visiblePapers(region.papers || []);
+      if (visPapers.length === 0) continue;
+      var centroid = _liveRegionCentroid(visPapers);
       if (!centroid) continue;
       var cView = renderer.graphToViewport(centroid);
       // Hit test: within bounding box of the label text
@@ -1114,7 +1159,9 @@
     // Label hit-test for pointer cursor
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
-      var centroid = _liveRegionCentroid(region.papers || []);
+      var visPapers = _visiblePapers(region.papers || []);
+      if (visPapers.length === 0) continue;
+      var centroid = _liveRegionCentroid(visPapers);
       if (!centroid) continue;
       var cView = renderer.graphToViewport(centroid);
       var labelW = region.label.length * 7;
@@ -1137,7 +1184,9 @@
     var newHovered = null;
     for (var i = 0; i < regions.length; i++) {
       var region = regions[i];
-      var hull = _computeLiveHull(region.papers || []);
+      var visPapers = _visiblePapers(region.papers || []);
+      if (visPapers.length === 0) continue;
+      var hull = _computeLiveHull(visPapers);
       if (!hull || hull.length < 3) continue;
       var viewPts = hull.map(function (p) { return renderer.graphToViewport(p); });
       if (_pointInPolygon(mx, my, viewPts)) {
@@ -1442,6 +1491,115 @@
     searchInput.value = term == null ? "" : String(term);
     searchInput.dispatchEvent(new Event("input", { bubbles: true }));
     try { searchInput.focus(); } catch (e) {}
+  };
+
+  // --- Timeframe filter ----------------------------------------------------
+  function initTimeframeFilter() {
+    // Collect all unique dates and sort them
+    var dateSet = {};
+    graphData.nodes.forEach(function (n) {
+      var d = (n.published || "").slice(0, 10);
+      if (d) dateSet[d] = true;
+    });
+    allDates = Object.keys(dateSet).sort();
+    if (allDates.length === 0) return;
+
+    var minDate = allDates[0];
+    var maxDate = allDates[allDates.length - 1];
+
+    // Configure date inputs
+    tfStart.min = minDate;
+    tfStart.max = maxDate;
+    tfStart.value = minDate;
+    tfEnd.min = minDate;
+    tfEnd.max = maxDate;
+    tfEnd.value = maxDate;
+
+    // Configure range sliders
+    tfRangeMin.min = 0;
+    tfRangeMin.max = allDates.length - 1;
+    tfRangeMin.value = 0;
+    tfRangeMax.min = 0;
+    tfRangeMax.max = allDates.length - 1;
+    tfRangeMax.value = allDates.length - 1;
+
+    // Date picker → update sliders + apply filter
+    tfStart.addEventListener("change", function () {
+      var idx = _closestDateIndex(tfStart.value, true);
+      tfRangeMin.value = idx;
+      _applyDateFilter();
+    });
+    tfEnd.addEventListener("change", function () {
+      var idx = _closestDateIndex(tfEnd.value, false);
+      tfRangeMax.value = idx;
+      _applyDateFilter();
+    });
+
+    // Slider → update date pickers + apply filter
+    tfRangeMin.addEventListener("input", function () {
+      var mi = parseInt(tfRangeMin.value);
+      var ma = parseInt(tfRangeMax.value);
+      if (mi > ma) { tfRangeMin.value = ma; mi = ma; }
+      tfStart.value = allDates[mi];
+      _applyDateFilter();
+    });
+    tfRangeMax.addEventListener("input", function () {
+      var mi = parseInt(tfRangeMin.value);
+      var ma = parseInt(tfRangeMax.value);
+      if (ma < mi) { tfRangeMax.value = mi; ma = mi; }
+      tfEnd.value = allDates[ma];
+      _applyDateFilter();
+    });
+
+    // Reset button
+    tfReset.addEventListener("click", function () {
+      tfRangeMin.value = 0;
+      tfRangeMax.value = allDates.length - 1;
+      tfStart.value = minDate;
+      tfEnd.value = maxDate;
+      dateFilterMin = null;
+      dateFilterMax = null;
+      refreshTableVisibility();
+      if (renderer && currentView !== "list") renderer.refresh();
+    });
+  }
+
+  /** Find the index of the closest date in allDates. */
+  function _closestDateIndex(dateStr, roundDown) {
+    for (var i = 0; i < allDates.length; i++) {
+      if (allDates[i] >= dateStr) return roundDown ? Math.max(0, i) : i;
+    }
+    return allDates.length - 1;
+  }
+
+  function _applyDateFilter() {
+    var mi = parseInt(tfRangeMin.value);
+    var ma = parseInt(tfRangeMax.value);
+    var isFullRange = (mi === 0 && ma === allDates.length - 1);
+    dateFilterMin = isFullRange ? null : allDates[mi];
+    dateFilterMax = isFullRange ? null : allDates[ma];
+    refreshTableVisibility();
+    if (renderer && currentView !== "list") renderer.refresh();
+  }
+
+  // Expose for testing
+  window.setDateFilter = function (minDate, maxDate) {
+    if (!allDates.length) return;
+    if (minDate) {
+      dateFilterMin = minDate;
+      tfStart.value = minDate;
+      tfRangeMin.value = _closestDateIndex(minDate, true);
+    }
+    if (maxDate) {
+      dateFilterMax = maxDate;
+      tfEnd.value = maxDate;
+      tfRangeMax.value = _closestDateIndex(maxDate, false);
+    }
+    refreshTableVisibility();
+    if (renderer && currentView !== "list") renderer.refresh();
+  };
+  window.clearDateFilter = function () {
+    tfReset.click();
   };
 
   // --- Card panel resize ---------------------------------------------------

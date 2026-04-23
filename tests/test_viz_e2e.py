@@ -694,7 +694,7 @@ class TestNodeClickNearLabel:
                 "x": 0.0,
                 "y": 0.0,
                 "semantic_x": 0.0,   # exactly at centroid
-                "semantic_y": 0.0,
+                "semantic_y": -0.3,
                 "cluster": 0,
             },
             {
@@ -713,8 +713,8 @@ class TestNodeClickNearLabel:
                 "relevant": True,
                 "x": 0.8,
                 "y": 0.8,
-                "semantic_x": 0.8,
-                "semantic_y": 0.8,
+                "semantic_x": 0.3,
+                "semantic_y": -0.3,
                 "cluster": 0,
             },
         ],
@@ -729,8 +729,8 @@ class TestNodeClickNearLabel:
                 "label": "Security of Tool-Using LLM Agents",
                 "color": {"light": "#4f6df5", "dark": "#6b8aff"},
                 "papers": ["overlap-node", "far-node"],
-                "hull": [[-0.3, -0.3], [0.9, -0.3], [0.9, 0.9], [-0.3, 0.9]],
-                "centroid": [0.0, 0.0],
+                "hull": [[-0.3, -0.6], [0.6, -0.6], [0.6, 0.0], [-0.3, 0.0]],
+                "centroid": [0.0, -0.3],
             },
         ],
     }
@@ -781,6 +781,8 @@ class TestNodeClickNearLabel:
             page.mouse.click(coords["x"], coords["y"])
             page.wait_for_timeout(400)
 
+            page.screenshot(path=str(tmp_path / "node-click-at-centroid.png"))
+
             # Check state
             result = page.evaluate("""() => {
                 const card = document.getElementById('card-panel');
@@ -805,3 +807,53 @@ class TestNodeClickNearLabel:
         finally:
             server.shutdown()
             browser.close()
+
+
+class TestTimeframeFilter:
+    """Tests for the date-range timeframe filter."""
+
+    def test_timeframe_filter_visible(self, browser_page):
+        """Timeframe filter widget should be visible."""
+        tf = browser_page.query_selector("#timeframe-filter")
+        assert tf is not None
+        assert tf.is_visible()
+
+    def test_date_inputs_populated(self, browser_page):
+        """Date inputs should be populated from graph data."""
+        start_val = browser_page.input_value("#tf-start")
+        end_val = browser_page.input_value("#tf-end")
+        assert start_val, "Start date should be set"
+        assert end_val, "End date should be set"
+        assert start_val <= end_val
+
+    def test_date_filter_hides_table_rows(self, browser_page):
+        """Setting a narrow date range should hide papers outside the range."""
+        # Switch to split view to see the table
+        browser_page.click('.view-btn[data-view="split"]')
+        browser_page.wait_for_timeout(400)
+
+        # Sample data has dates: 2026-01-15, 2026-01-16, 2026-01-17
+        # Filter to only the first date
+        browser_page.evaluate("window.setDateFilter('2026-01-15', '2026-01-15')")
+        browser_page.wait_for_timeout(300)
+
+        visible = browser_page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert visible == 1, f"Expected 1 visible row, got {visible}"
+
+    def test_date_filter_reset_shows_all(self, browser_page):
+        """Resetting the date filter should show all rows."""
+        browser_page.evaluate("window.clearDateFilter()")
+        browser_page.wait_for_timeout(300)
+
+        visible = browser_page.evaluate("""
+            Array.from(document.querySelectorAll('#paper-table-body tr'))
+                .filter(r => !r.classList.contains('pt-hidden')).length
+        """)
+        assert visible == 3, f"Expected 3 visible rows after reset, got {visible}"
+
+        # Switch back to graph view for subsequent tests
+        browser_page.click('.view-btn[data-view="graph"]')
+        browser_page.wait_for_timeout(300)
