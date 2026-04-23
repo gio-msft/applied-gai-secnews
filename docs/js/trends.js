@@ -519,9 +519,6 @@
       .on("mouseleave", function () {
         hideTooltip();
         linesG.selectAll(".trends-kw-line").classed("is-hover", false);
-      })
-      .on("click", function (event, d) {
-        activateKeywordSearch(d.term);
       });
 
     // Legend
