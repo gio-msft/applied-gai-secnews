@@ -1335,15 +1335,6 @@
       pointsEl.appendChild(li);
     });
 
-    var projEl = document.getElementById("card-projects");
-    projEl.innerHTML = "";
-    (data.projects || []).forEach(function (p) {
-      var span = document.createElement("span");
-      span.className = "badge project-badge";
-      span.textContent = p;
-      projEl.appendChild(span);
-    });
-
     // --- Linked nodes sections (always both, from raw graphData) ---
     function buildLinkedSection(containerId, heading, neighborIds) {
       var el = document.getElementById(containerId);

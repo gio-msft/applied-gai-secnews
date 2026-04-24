@@ -792,7 +792,6 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
             "one_liner": p.get("one_liner", ""),
             "points": p.get("points", []),
             "interest_score": p.get("interest_score", 5),
-            "projects": p.get("projects", []),
             "relevant": p.get("relevant", False),
             "x": pos["x"],
             "y": pos["y"],
@@ -822,6 +821,50 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
     )
 
     return graph
+
+
+# ---------------------------------------------------------------------------
+# Newsletter export
+# ---------------------------------------------------------------------------
+
+NEWSLETTER_OUTPUT = "docs/data/newsletters.json"
+SUMMARIES_DIR = "summaries"
+
+
+def export_newsletters(
+    summaries_dir: str = SUMMARIES_DIR,
+    output_path: str = NEWSLETTER_OUTPUT,
+) -> list[dict]:
+    """Convert all summaries/*.md files to HTML and write a JSON array."""
+    import re
+    import markdown
+
+    md = markdown.Markdown(extensions=["extra"])
+    project_re = re.compile(r"^\s*📌\s*\*Relevant to:.*\*\s*$", re.MULTILINE)
+    # Ensure a blank line before the first bullet so markdown parses lists
+    bullet_re = re.compile(r"(\S[^\n]*)\n( - )", re.MULTILINE)
+
+    entries = []
+    for p in sorted(Path(summaries_dir).glob("*.md"), reverse=True):
+        date_str = p.stem  # e.g. "2026-04-24"
+        raw = p.read_text(encoding="utf-8")
+        # Strip project-relevance lines
+        raw = project_re.sub("", raw)
+        # Insert blank line before first bullet in each paragraph
+        raw = bullet_re.sub(r"\1\n\n\2", raw)
+        md.reset()
+        html = md.convert(raw)
+        # Human-readable label: "Apr 24, 2026"
+        from datetime import date as _date
+        d = _date.fromisoformat(date_str)
+        label = d.strftime("%b %d, %Y")
+        entries.append({"date": date_str, "label": label, "html": html})
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(entries), encoding="utf-8")
+    logger.info("Wrote %s — %d newsletter issues.", output_path, len(entries))
+    return entries
 
 
 # ---------------------------------------------------------------------------

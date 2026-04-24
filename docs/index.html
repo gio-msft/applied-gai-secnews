@@ -27,6 +27,10 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 4,7 7,9 13,2"/><polyline points="9,2 13,2 13,6"/></svg>
         <span>Trends</span>
       </button>
+      <button id="newsletter-toggle" class="trends-cta" title="Weekly newsletter archive" aria-label="Open newsletter archive">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="12" height="9" rx="1.5"/><polyline points="1,3 7,8.5 13,3"/></svg>
+        <span>Newsletter</span>
+      </button>
     </div>
     <div class="toolbar-right">
       <div class="search-box">
@@ -62,6 +66,7 @@
         <li><strong>Search</strong> papers by title from the toolbar — filters both graph and table</li>
         <li><strong>Zoom/pan</strong> with scroll wheel and mouse drag</li>
         <li><strong>Trends</strong> button (📈) opens a timeline of topic volume and a parallel chart of trending title keywords — hover streams/lines for weekly counts, click a topic to filter by cluster or a keyword to search the graph</li>
+        <li><strong>Newsletter</strong> button (✉️) opens the weekly newsletter archive — browse past editions as they appeared in the email, with a sidebar to jump between weeks</li>
       </ul>
     </div>
   </div>
@@ -100,6 +105,20 @@
       <p id="trends-caption" class="trends-caption"></p>
     </div>
     <div id="trends-tooltip" class="trends-tooltip hidden"></div>
+  </div>
+
+  <!-- Newsletter overlay -->
+  <div id="newsletter-overlay" class="newsletter-overlay hidden" aria-hidden="true">
+    <div class="newsletter-modal" role="dialog" aria-labelledby="newsletter-heading">
+      <button id="newsletter-close" class="icon-btn newsletter-close" title="Close" aria-label="Close">&times;</button>
+      <nav class="newsletter-sidebar">
+        <h2 id="newsletter-heading">Newsletter Archive</h2>
+        <ul id="newsletter-week-list"></ul>
+      </nav>
+      <div class="newsletter-body" id="newsletter-content">
+        <p class="newsletter-placeholder">Select a week from the sidebar.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Legend (clickable tag filter) -->
@@ -180,7 +199,6 @@
       <a id="card-link" class="card-link" target="_blank" rel="noopener noreferrer">View on arXiv →</a>
       <p id="card-oneliner" class="card-oneliner"></p>
       <ul id="card-points" class="card-points"></ul>
-      <div id="card-projects" class="card-projects"></div>
       <div id="card-linked-citations" class="card-linked"></div>
       <div id="card-linked-authors" class="card-linked"></div>
       <div id="card-linked-similar" class="card-linked"></div>
@@ -201,5 +219,6 @@
   <!-- App -->
   <script src="js/app.js"></script>
   <script src="js/trends.js"></script>
+  <script src="js/newsletter.js"></script>
 </body>
 </html>
