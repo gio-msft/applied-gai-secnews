@@ -1505,6 +1505,16 @@ html, body {
   text-decoration: underline;
 }
 
+.newsletter-body a.nl-paper-link {
+  color: var(--text-primary);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--accent-solid);
+}
+.newsletter-body a.nl-paper-link:hover {
+  color: var(--accent-solid);
+  text-decoration: none;
+}
+
 .newsletter-body code {
   font-size: 12px;
   background: var(--bg-input);

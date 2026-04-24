@@ -844,6 +844,11 @@ def export_newsletters(
     # Ensure a blank line before the first bullet so markdown parses lists
     bullet_re = re.compile(r"(\S[^\n]*)\n( - )", re.MULTILINE)
 
+    # Regex to extract paper ID from source URL and make title clickable
+    title_re = re.compile(
+        r'<strong>(.*?)</strong>\s*<a href="https?://arxiv\.org/pdf/([^"]+)\.pdf">',
+    )
+
     entries = []
     for p in sorted(Path(summaries_dir).glob("*.md"), reverse=True):
         date_str = p.stem  # e.g. "2026-04-24"
@@ -854,6 +859,12 @@ def export_newsletters(
         raw = bullet_re.sub(r"\1\n\n\2", raw)
         md.reset()
         html = md.convert(raw)
+        # Make paper titles clickable (link to graph node)
+        html = title_re.sub(
+            r'<a class="nl-paper-link" data-paper-id="\2" href="#"><strong>\1</strong></a> '
+            r'📜<a href="https://arxiv.org/pdf/\2.pdf">',
+            html,
+        )
         # Human-readable label: "Apr 24, 2026"
         from datetime import date as _date
         d = _date.fromisoformat(date_str)

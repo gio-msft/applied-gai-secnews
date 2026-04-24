@@ -1536,6 +1536,21 @@
     try { searchInput.focus(); } catch (e) {}
   };
 
+  // Expose a way to select a paper by ID (used by the Newsletter overlay)
+  window.selectPaper = function (paperId) {
+    if (!graph || !graph.hasNode(paperId)) return false;
+    selectedNode = paperId;
+    var attrs = graph.getNodeAttributes(paperId);
+    showCard(attrs._data);
+    highlightNode(paperId);
+    if (renderer && currentView !== "list") {
+      var pos = renderer.getNodeDisplayData(paperId);
+      if (pos) renderer.getCamera().animate({ x: pos.x, y: pos.y, ratio: 0.3 }, { duration: 400 });
+    }
+    tableSelectRow(paperId);
+    return true;
+  };
+
   // --- Timeframe filter ----------------------------------------------------
   function initTimeframeFilter() {
     // Collect all unique dates and sort them

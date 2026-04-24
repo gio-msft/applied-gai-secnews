@@ -93,5 +93,21 @@
       links[j].setAttribute("target", "_blank");
       links[j].setAttribute("rel", "noopener noreferrer");
     }
+    // Paper title links: navigate to graph node instead of opening new tab
+    var paperLinks = contentEl.querySelectorAll("a.nl-paper-link");
+    for (var k = 0; k < paperLinks.length; k++) {
+      paperLinks[k].removeAttribute("target");
+      paperLinks[k].removeAttribute("rel");
+      paperLinks[k].addEventListener("click", handlePaperClick);
+    }
+  }
+
+  function handlePaperClick(e) {
+    e.preventDefault();
+    var paperId = this.getAttribute("data-paper-id");
+    if (paperId && window.selectPaper) {
+      close();
+      window.selectPaper(paperId);
+    }
   }
 })();
