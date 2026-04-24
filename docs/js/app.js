@@ -19,8 +19,8 @@
     semantic:  { light: "rgba(30,130,65,0.55)",     dark: "rgba(100,220,140,0.4)"  },
   };
 
-  const MIN_NODE_SIZE = 1.5;
-  const MAX_NODE_SIZE = 8;
+  const MIN_NODE_SIZE = 1;
+  const MAX_NODE_SIZE = 6;
   const SCALE_FACTOR = 600; // spread pre-computed positions
 
   // --- State ---------------------------------------------------------------
