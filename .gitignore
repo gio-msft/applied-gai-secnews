@@ -194,6 +194,7 @@ summaries/*.eml:OECustomProperty
 projects.json
 embeddings_cache.json
 search_state.json
+umap_state.json
 
 screenshots/
 

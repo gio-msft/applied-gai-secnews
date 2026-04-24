@@ -10,6 +10,7 @@ from build_viz import (
     compute_hulls,
     compute_similarity_edges,
     compute_topic_clusters,
+    _match_clusters_to_previous,
 )
 
 
@@ -288,3 +289,115 @@ class TestComputeHulls:
         d_small = max_dist(clusters_small[0]["hull"], clusters_small[0]["centroid"])
         d_large = max_dist(clusters_large[0]["hull"], clusters_large[0]["centroid"])
         assert d_large > d_small
+
+
+# ---------------------------------------------------------------------------
+# _match_clusters_to_previous
+# ---------------------------------------------------------------------------
+
+class TestMatchClustersToPrevious:
+
+    def test_high_overlap_reuses_label(self):
+        """Clusters with >50% Jaccard overlap should match."""
+        new_cluster_papers = {
+            0: ["a", "b", "c", "d"],
+        }
+        prev_clusters = [{
+            "id": 0,
+            "label": "Previous Label",
+            "color": {"light": "#abc", "dark": "#def"},
+            "papers": ["a", "b", "c"],  # 3/4 overlap
+        }]
+
+        matched = _match_clusters_to_previous(new_cluster_papers, prev_clusters)
+
+        assert 0 in matched
+        assert matched[0]["label"] == "Previous Label"
+        assert matched[0]["color"] == {"light": "#abc", "dark": "#def"}
+
+    def test_low_overlap_not_matched(self):
+        """Clusters with <50% Jaccard overlap should not match."""
+        new_cluster_papers = {
+            0: ["a", "b", "c", "d", "e", "f"],
+        }
+        prev_clusters = [{
+            "id": 0,
+            "label": "Old Label",
+            "color": {"light": "#000", "dark": "#fff"},
+            "papers": ["a", "x", "y", "z"],  # 1/9 Jaccard
+        }]
+
+        matched = _match_clusters_to_previous(new_cluster_papers, prev_clusters)
+
+        assert 0 not in matched
+
+    def test_no_previous_clusters(self):
+        """Empty previous clusters should return empty matches."""
+        matched = _match_clusters_to_previous({0: ["a", "b"]}, [])
+        assert matched == {}
+
+    def test_multiple_clusters_matched_independently(self):
+        """Each new cluster matches its best previous cluster."""
+        new_cluster_papers = {
+            0: ["a", "b", "c"],
+            1: ["d", "e", "f"],
+        }
+        prev_clusters = [
+            {"id": 0, "label": "Alpha", "color": {"light": "#1", "dark": "#2"},
+             "papers": ["a", "b", "c"]},
+            {"id": 1, "label": "Beta", "color": {"light": "#3", "dark": "#4"},
+             "papers": ["d", "e", "f"]},
+        ]
+
+        matched = _match_clusters_to_previous(new_cluster_papers, prev_clusters)
+
+        assert matched[0]["label"] == "Alpha"
+        assert matched[1]["label"] == "Beta"
+
+    def test_no_double_matching(self):
+        """A previous cluster should not be matched to two new clusters."""
+        new_cluster_papers = {
+            0: ["a", "b", "c"],
+            1: ["a", "b", "d"],  # also overlaps with prev cluster 0
+        }
+        prev_clusters = [
+            {"id": 0, "label": "Only One", "color": {"light": "#1", "dark": "#2"},
+             "papers": ["a", "b", "c"]},
+        ]
+
+        matched = _match_clusters_to_previous(new_cluster_papers, prev_clusters)
+
+        # Only one of the new clusters should be matched
+        assert len(matched) == 1
+
+
+class TestIncrementalClusters:
+
+    def test_prev_clusters_reuses_labels(self):
+        """When prev_clusters match, LLM should be called fewer times."""
+        papers = _make_papers(30)
+        embeddings = _make_clustered_embeddings(papers, n_clusters=3)
+        client = _make_mock_oai_client()
+
+        # First run: no previous clusters
+        clusters_first, _ = compute_topic_clusters(
+            papers, embeddings, client,
+        )
+        first_llm_calls = client.chat.completions.create.call_count
+
+        # Reset mock
+        client.chat.completions.create.reset_mock()
+
+        # Second run: pass first-run clusters as previous
+        clusters_second, _ = compute_topic_clusters(
+            papers, embeddings, client,
+            prev_clusters=clusters_first,
+        )
+        second_llm_calls = client.chat.completions.create.call_count
+
+        # Same data → same clusters → all labels should be reused
+        assert second_llm_calls < first_llm_calls
+        # Labels should be reused from prev
+        first_labels = {c["label"] for c in clusters_first}
+        second_labels = {c["label"] for c in clusters_second}
+        assert second_labels.issubset(first_labels | {"Test Topic Label"})

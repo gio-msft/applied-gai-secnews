@@ -53,6 +53,8 @@ PCA_COMPONENTS = 30
 HDBSCAN_MIN_SAMPLES = 2
 SIMILARITY_THRESHOLD = 0.55
 SIMILARITY_MAX_K = 5
+UMAP_STATE_PATH = "umap_state.json"
+CLUSTER_MATCH_JACCARD_THRESHOLD = 0.5
 
 # 15-color palette for topic regions (light/dark variants)
 CLUSTER_COLORS = [
@@ -188,7 +190,53 @@ def build_author_edges(papers):
 # Topic clustering
 # ---------------------------------------------------------------------------
 
-def compute_topic_clusters(papers, embeddings, oai_client):
+def _match_clusters_to_previous(new_cluster_papers, prev_clusters,
+                                threshold=CLUSTER_MATCH_JACCARD_THRESHOLD):
+    """Match new HDBSCAN clusters to previous clusters by Jaccard similarity.
+
+    *new_cluster_papers* is ``{cluster_id: [paper_id, ...]}``.
+    *prev_clusters* is the ``topic_regions`` list from a previous graph.json.
+
+    Returns a dict ``{new_cluster_id: {"label": str, "color": dict}}``
+    for clusters that matched above *threshold*.  Unmatched clusters are
+    omitted (the caller should generate fresh labels for those).
+    """
+    if not prev_clusters:
+        return {}
+
+    prev_sets = {r["id"]: set(r["papers"]) for r in prev_clusters}
+    prev_meta = {r["id"]: {"label": r["label"], "color": r["color"]}
+                 for r in prev_clusters}
+
+    matched = {}          # new_cid → meta
+    used_prev_ids = set()  # prevent two new clusters sharing a prev match
+
+    for new_cid, new_pids in new_cluster_papers.items():
+        new_set = set(new_pids)
+        best_jaccard = 0.0
+        best_prev_id = None
+
+        for prev_id, prev_set in prev_sets.items():
+            if prev_id in used_prev_ids:
+                continue
+            intersection = len(new_set & prev_set)
+            union = len(new_set | prev_set)
+            if union == 0:
+                continue
+            jaccard = intersection / union
+            if jaccard > best_jaccard:
+                best_jaccard = jaccard
+                best_prev_id = prev_id
+
+        if best_prev_id is not None and best_jaccard >= threshold:
+            matched[new_cid] = prev_meta[best_prev_id]
+            used_prev_ids.add(best_prev_id)
+
+    return matched
+
+
+def compute_topic_clusters(papers, embeddings, oai_client,
+                           prev_clusters=None):
     """Cluster papers by embedding similarity and generate LLM labels.
 
     Returns a list of cluster dicts::
@@ -236,21 +284,41 @@ def compute_topic_clusters(papers, embeddings, oai_client):
     # Build paper lookup for label generation
     paper_by_id = {p["id"]: p for p in papers}
 
-    # Generate LLM labels for each cluster
+    # Match new clusters to previous ones to reuse stable labels
+    matched_meta = _match_clusters_to_previous(
+        dict(cluster_papers), prev_clusters or [],
+    )
+    n_reused = len(matched_meta)
+    n_new_labels = len(unique_labels) - n_reused
+    if prev_clusters:
+        logger.info(
+            "Cluster label matching: %d reused, %d new (of %d total).",
+            n_reused, n_new_labels, len(unique_labels),
+        )
+
+    # Generate LLM labels only for unmatched clusters
     clusters = []
     for i, cid in enumerate(unique_labels):
         members = cluster_papers[cid]
-        color = CLUSTER_COLORS[i % len(CLUSTER_COLORS)]
 
-        # Build text summary for LLM
-        sample_texts = []
-        for pid in members[:20]:  # cap at 20 to keep prompt short
-            p = paper_by_id[pid]
-            sample_texts.append(f"- {p.get('title', pid)}: {p.get('one_liner', '')}")
-        sample_block = "\n".join(sample_texts)
+        if cid in matched_meta:
+            label = matched_meta[cid]["label"]
+            color = matched_meta[cid]["color"]
+            logger.info("Cluster %d (%d papers): %s [reused]",
+                        cid, len(members), label)
+        else:
+            color = CLUSTER_COLORS[i % len(CLUSTER_COLORS)]
+            # Build text summary for LLM
+            sample_texts = []
+            for pid in members[:20]:  # cap at 20 to keep prompt short
+                p = paper_by_id[pid]
+                sample_texts.append(
+                    f"- {p.get('title', pid)}: {p.get('one_liner', '')}")
+            sample_block = "\n".join(sample_texts)
 
-        label = _generate_cluster_label(oai_client, sample_block)
-        logger.info("Cluster %d (%d papers): %s", cid, len(members), label)
+            label = _generate_cluster_label(oai_client, sample_block)
+            logger.info("Cluster %d (%d papers): %s [new]",
+                        cid, len(members), label)
 
         clusters.append({
             "id": cid,
@@ -467,12 +535,63 @@ def compute_hulls(clusters, positions, radius=0.04, resolution=24, *, pad=None):
 # Layout
 # ---------------------------------------------------------------------------
 
-def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43):
-    """Compute 2D positions via UMAP on the embedding vectors."""
+def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43,
+                         prev_raw_positions=None, umap_state_path=UMAP_STATE_PATH):
+    """Compute 2D positions via UMAP on the embedding vectors.
+
+    If *prev_raw_positions* is provided (``{paper_id: [x, y]}`` in raw UMAP
+    space), existing papers are warm-started at their previous coordinates
+    and new papers are initialised near their nearest semantic neighbour.
+    This keeps existing nodes visually stable across incremental rebuilds.
+
+    Raw (pre-normalisation) coordinates are saved to *umap_state_path* so
+    subsequent runs can warm-start from them.
+    """
     from umap import UMAP
+    from sklearn.metrics.pairwise import cosine_similarity as _cos_sim
 
     ids = [n["id"] for n in nodes]
     matrix = np.array([embeddings[pid] for pid in ids])
+
+    # Build init array for warm-start when previous positions exist
+    init = "spectral"  # UMAP default
+    if prev_raw_positions:
+        known_mask = [pid in prev_raw_positions for pid in ids]
+        n_known = sum(known_mask)
+        n_new = len(ids) - n_known
+        if n_known >= 2:
+            logger.info(
+                "Warm-starting UMAP: %d existing nodes pinned, %d new nodes.",
+                n_known, n_new,
+            )
+            rng = np.random.RandomState(seed)
+            init_arr = np.zeros((len(ids), 2), dtype=np.float32)
+
+            # Fill known positions
+            known_indices = []
+            known_embeddings = []
+            for i, pid in enumerate(ids):
+                if pid in prev_raw_positions:
+                    init_arr[i] = prev_raw_positions[pid]
+                    known_indices.append(i)
+                    known_embeddings.append(matrix[i])
+
+            # For new papers, find nearest known neighbour and place nearby
+            if n_new > 0 and known_embeddings:
+                known_emb_matrix = np.array(known_embeddings)
+                for i, pid in enumerate(ids):
+                    if pid not in prev_raw_positions:
+                        sims = _cos_sim(matrix[i:i+1], known_emb_matrix)[0]
+                        best_j = known_indices[int(np.argmax(sims))]
+                        jitter = rng.normal(0, 0.1, size=2).astype(np.float32)
+                        init_arr[i] = init_arr[best_j] + jitter
+
+            init = init_arr
+        else:
+            logger.info(
+                "Too few previous positions (%d); using default spectral init.",
+                n_known,
+            )
 
     logger.info("Running UMAP on %d × %d embedding matrix…", *matrix.shape)
     reducer = UMAP(
@@ -481,8 +600,16 @@ def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43):
         spread=spread,
         metric="cosine",
         random_state=seed,
+        init=init,
     )
     coords = reducer.fit_transform(matrix)
+
+    # Save raw coordinates before normalisation
+    raw_positions = {pid: [float(coords[i, 0]), float(coords[i, 1])]
+                     for i, pid in enumerate(ids)}
+    Path(umap_state_path).write_text(json.dumps(raw_positions))
+    logger.info("Saved raw UMAP state to %s (%d entries).",
+                umap_state_path, len(raw_positions))
 
     # Normalise to [-1, 1]
     for dim in range(2):
@@ -536,8 +663,18 @@ def _compute_layout(nodes, edge_sets, k=1.5, iterations=200, seed=42):
 def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
                 skip_citations=False, force_citations=False,
                 skip_embeddings=False, embedding_cache_path=EMBEDDING_CACHE_PATH,
-                reuse_clusters=False):
-    """Build the graph JSON and write to *output_path*."""
+                reuse_clusters=False, full_recompute=False,
+                umap_state_path=UMAP_STATE_PATH):
+    """Build the graph JSON and write to *output_path*.
+
+    By default, the build is **incremental**: if previous UMAP state and
+    graph data exist, UMAP is warm-started so existing node positions stay
+    stable, and HDBSCAN cluster labels are reused for clusters whose
+    membership hasn't changed much.
+
+    Pass *full_recompute=True* (``--full-recompute``) to discard previous
+    state and rebuild everything from scratch (recommended monthly).
+    """
 
     paper_db = PaperDB(db_path)
     all_papers = paper_db.find(summarized=True)
@@ -573,6 +710,24 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
             all_papers, oai_client, cache_path=embedding_cache_path,
         )
 
+    # --- Load previous state for incremental mode ---
+    prev_raw_positions = None
+    prev_clusters = None
+    if not full_recompute:
+        if Path(umap_state_path).exists():
+            prev_raw_positions = json.loads(
+                Path(umap_state_path).read_text())
+            logger.info("Loaded previous UMAP state (%d entries) for warm-start.",
+                        len(prev_raw_positions))
+        if Path(output_path).exists():
+            prev_graph = json.loads(Path(output_path).read_text())
+            prev_clusters = prev_graph.get("topic_regions", [])
+            if prev_clusters:
+                logger.info("Loaded %d previous clusters for label matching.",
+                            len(prev_clusters))
+    else:
+        logger.info("Full recompute requested — ignoring previous state.")
+
     # --- Semantic features (require embeddings) ---
     similarity_edges = []
     topic_regions = []
@@ -596,6 +751,7 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
         else:
             topic_regions, paper_cluster = compute_topic_clusters(
                 all_papers, embeddings, oai_client,
+                prev_clusters=prev_clusters,
             )
         # Similarity edges
         similarity_edges = compute_similarity_edges(all_papers, embeddings)
@@ -608,7 +764,11 @@ def build_graph(db_path=DB_PATH, cache_path=CACHE_PATH, output_path=OUTPUT_PATH,
 
     # --- Semantic layout (UMAP on embedding vectors) ---
     if embeddings:
-        semantic_positions = _compute_umap_layout(all_papers, embeddings)
+        semantic_positions = _compute_umap_layout(
+            all_papers, embeddings,
+            prev_raw_positions=prev_raw_positions,
+            umap_state_path=umap_state_path,
+        )
 
         # Compute convex hulls using semantic positions
         compute_hulls(topic_regions, semantic_positions)
@@ -689,6 +849,14 @@ if __name__ == "__main__":
         help="Reuse topic clusters/labels from existing graph.json; only recompute hulls.",
     )
     parser.add_argument(
+        "--full-recompute", action="store_true",
+        help="Ignore previous UMAP state and cluster labels; rebuild from scratch.",
+    )
+    parser.add_argument(
+        "--umap-state-path", default=UMAP_STATE_PATH,
+        help="Path to UMAP state cache (default: %(default)s).",
+    )
+    parser.add_argument(
         "--embedding-cache-path", default=EMBEDDING_CACHE_PATH,
         help="Path to embeddings cache (default: %(default)s).",
     )
@@ -715,4 +883,6 @@ if __name__ == "__main__":
         skip_embeddings=args.skip_embeddings,
         embedding_cache_path=args.embedding_cache_path,
         reuse_clusters=args.reuse_clusters,
+        full_recompute=args.full_recompute,
+        umap_state_path=args.umap_state_path,
     )
