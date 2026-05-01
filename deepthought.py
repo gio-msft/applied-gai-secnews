@@ -334,8 +334,8 @@ if __name__ == "__main__":
     )
 
     if args.build_viz:
-        from build_viz import build_graph
+        from build_viz import build_site_data
         logger.info("[*] Building interactive graph visualization...")
-        build_graph(db_path=DB_PATH)
+        build_site_data(db_path=DB_PATH)
 
     logger.info("[$] FIN")

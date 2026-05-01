@@ -878,6 +878,13 @@ def export_newsletters(
     return entries
 
 
+def build_site_data(**build_graph_kwargs):
+    """Build all static data files consumed by the website."""
+    graph = build_graph(**build_graph_kwargs)
+    export_newsletters()
+    return graph
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -928,7 +935,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    build_graph(
+    build_site_data(
         db_path=args.db_path,
         cache_path=args.cache_path,
         output_path=args.output_path,
