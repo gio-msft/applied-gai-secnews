@@ -6993,5 +6993,433 @@
   "2604.28157v1": {
     "references": [],
     "cited_by": []
+  },
+  "2605.00796v1": {
+    "references": [
+      "2603.21654v1"
+    ],
+    "cited_by": []
+  },
+  "2605.00974v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01047v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01078v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01133v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01143v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01186v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01449v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01462v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01644v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01687v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01699v3": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01739v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01740v1": {
+    "references": [
+      "2604.16838v1"
+    ],
+    "cited_by": []
+  },
+  "2605.01769v2": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01782v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01885v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01892v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01899v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01913v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01950v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.01970v2": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02187v1": {
+    "references": [
+      "2604.08407v1",
+      "2604.10134v1"
+    ],
+    "cited_by": []
+  },
+  "2605.02255v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02346v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02647v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02682v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02812v1": {
+    "references": [
+      "2603.15727v1"
+    ],
+    "cited_by": []
+  },
+  "2605.02868v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.02971v1": {
+    "references": [
+      "2603.07445v1",
+      "2604.12710v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03034v1": {
+    "references": [
+      "2602.20021v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03058v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03095v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03129v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03140v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03188v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03213v2": {
+    "references": [
+      "2604.18231v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03226v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03228v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03242v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03353v1": {
+    "references": [
+      "2604.03587v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03378v1": {
+    "references": [
+      "2602.20156v3"
+    ],
+    "cited_by": []
+  },
+  "2605.03384v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03441v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03482v2": {
+    "references": [
+      "2603.15125v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03604v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03619v2": {
+    "references": [
+      "2603.09044v1"
+    ],
+    "cited_by": []
+  },
+  "2605.03697v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.03956v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04019v1": {
+    "references": [
+      "2604.14228v1"
+    ],
+    "cited_by": []
+  },
+  "2605.04251v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04261v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04446v1": {
+    "references": [
+      "2604.15022v1"
+    ],
+    "cited_by": []
+  },
+  "2605.04491v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04499v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04572v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04700v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04760v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04785v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04808v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.04992v1": {
+    "references": [
+      "2603.21975v1"
+    ],
+    "cited_by": []
+  },
+  "2605.05000v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05058v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05116v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05260v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05269v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05271v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05274v1": {
+    "references": [
+      "2602.20156v3",
+      "2602.20867v1",
+      "2603.16572v1",
+      "2604.11790v1"
+    ],
+    "cited_by": []
+  },
+  "2605.05287v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05379v1": {
+    "references": [
+      "2605.05440v1"
+    ],
+    "cited_by": [
+      "2605.05440v1"
+    ]
+  },
+  "2605.05415v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05440v1": {
+    "references": [
+      "2605.05379v1"
+    ],
+    "cited_by": [
+      "2605.05379v1"
+    ]
+  },
+  "2605.05459v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05509v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05630v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05632v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05662v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05687v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05704v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05709v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05807v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05818v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05846v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05969v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05974v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.05995v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.06158v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.06205v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.06393v1": {
+    "references": [
+      "2602.20708v1",
+      "2603.10387v1",
+      "2603.12230v1",
+      "2603.20953v1",
+      "2603.28166v1",
+      "2603.28807v1",
+      "2604.01438v1",
+      "2604.03131v1",
+      "2604.04759v1",
+      "2604.06284v1"
+    ],
+    "cited_by": []
+  },
+  "2605.06423v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.06486v1": {
+    "references": [],
+    "cited_by": []
+  },
+  "2605.06601v1": {
+    "references": [
+      "2604.18718v1"
+    ],
+    "cited_by": []
+  },
+  "2605.06605v1": {
+    "references": [],
+    "cited_by": []
   }
 }
