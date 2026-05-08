@@ -1308,12 +1308,22 @@ html, body {
 .trends-list-bar-fill.rise { background: var(--color-security); }
 .trends-list-bar-fill.cool { background: var(--color-cyber); }
 
-.trends-tagshare {
+.trends-newsletter-volume {
   width: 100%;
-  height: 56px;
+  height: 144px;
   position: relative;
 }
-.trends-tagshare svg { display: block; width: 100%; height: 100%; }
+.trends-newsletter-volume svg { display: block; width: 100%; height: 100%; }
+.trends-newsletter-bar {
+  fill: var(--color-security);
+  opacity: 0.82;
+  cursor: default;
+  transition: opacity 0.12s ease, filter 0.12s ease;
+}
+.trends-newsletter-bar:hover {
+  opacity: 1;
+  filter: brightness(1.12);
+}
 
 .trends-caption {
   font-size: 11px;

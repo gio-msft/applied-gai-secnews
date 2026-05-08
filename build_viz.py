@@ -859,6 +859,13 @@ def export_newsletters(
         raw = bullet_re.sub(r"\1\n\n\2", raw)
         md.reset()
         html = md.convert(raw)
+        paper_ids = []
+        seen_paper_ids = set()
+        for match in title_re.finditer(html):
+            paper_id = match.group(2)
+            if paper_id not in seen_paper_ids:
+                seen_paper_ids.add(paper_id)
+                paper_ids.append(paper_id)
         # Make paper titles clickable (link to graph node)
         html = title_re.sub(
             r'<a class="nl-paper-link" data-paper-id="\2" href="#"><strong>\1</strong></a> '
@@ -869,7 +876,13 @@ def export_newsletters(
         from datetime import date as _date
         d = _date.fromisoformat(date_str)
         label = d.strftime("%b %d, %Y")
-        entries.append({"date": date_str, "label": label, "html": html})
+        entries.append({
+            "date": date_str,
+            "label": label,
+            "html": html,
+            "paper_ids": paper_ids,
+            "paper_count": len(paper_ids),
+        })
 
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)

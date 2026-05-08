@@ -176,7 +176,7 @@ docs/
 - **Semantic mode**: Switching to "Semantic" animates nodes to a UMAP embedding-based layout, draws labeled bubble-shaped topic region overlays (HDBSCAN clusters with LLM-generated labels, Shapely buffered-union outlines), and shows similarity edges only on hover/selection.
 - **Split Graph/List view**: Three view modes (Graph only, Split, List only) toggled via toolbar buttons. Split mode shows the graph on the left and a sortable paper table on the right. The two views are fully synchronized: clicking or hovering in one highlights the corresponding element in the other. The table supports sorting by title, score, tag, or date (with secondary tiebreakers: score desc, date desc). Tag filters, cluster filters, and search all apply to both views simultaneously. Keyboard navigation (arrow keys, Enter, Escape) is supported in the table.
 - **Similar Papers card section**: The card panel always shows a "Similar Papers" section (top-5 by cosine similarity) regardless of active layer.
-- **Trends overlay (📈 toolbar button)**: Full-screen modal with a weekly streamgraph of topic volume (d3 `stackOffsetWiggle` + `stackOrderInsideOut`), a Rising/Cooling topics panel (4-week window delta), and a normalized tag-share strip over time. Clicking any stream or rising/cooling item closes the overlay and applies the existing `filterByCluster` to the main graph. Caps at top 20 clusters by volume (rest roll into muted "Other"); drops clusters with fewer than 5 total papers. Pure client-side aggregation from existing `graph.json` fields — no backend changes needed.
+- **Trends overlay (📈 toolbar button)**: Full-screen modal with a weekly streamgraph of topic volume (d3 `stackOffsetWiggle` + `stackOrderInsideOut`), title-keyword trend lines, a Rising/Cooling topics panel (4-week window delta), and a newsletter issue-volume bar chart. Clicking any stream or rising/cooling item closes the overlay and applies the existing `filterByCluster` to the main graph. Caps at top 20 clusters by volume (rest roll into muted "Other"); drops clusters with fewer than 5 total papers. Topic and keyword trends aggregate from `graph.json`; newsletter volume uses `newsletters.json` issue counts.
 - **Node encoding**: Size by `interest_score`, color by `tag` (security/cyber/general).
 - **Click-to-inspect**: Clicking a node or table row opens a card panel with title, authors, affiliations, arXiv link, score, summary, key findings, and project affinity.
 - **Search**: Type-ahead search by paper title, zooms to matching node and filters the table.
@@ -187,7 +187,7 @@ docs/
 - **`papers.json`** is read-only from the viz pipeline — never modified.
 - **`citations_cache.json`** is the persistent S2 API cache, committed to the repo. Incremental: only new paper IDs are fetched on each run.
 - **`docs/data/graph.json`** is the graph output consumed by the frontend.
-- **`docs/data/newsletters.json`** is the newsletter archive consumed by the frontend; generated from `summaries/*.md` by `build_viz.py`.
+- **`docs/data/newsletters.json`** is the newsletter archive consumed by the frontend; generated from `summaries/*.md` by `build_viz.py`. Each issue includes `date`, `label`, rendered `html`, ordered unique `paper_ids`, and `paper_count`; the Trends overlay uses `paper_count` for newsletter volume.
 
 ### Known Pitfalls (Viz)
 - **Semantic Scholar rate limits**: Free tier allows 100 req/5 min. For ~6K papers batched at 500/req, this is ~12 requests — well within limits. If rate-limited, set `S2_API_KEY` env var.

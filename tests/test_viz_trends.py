@@ -93,6 +93,23 @@ def _build_sample_graph():
     }
 
 
+def _build_sample_newsletters():
+    """Generate newsletter issue counts for the Trends volume chart."""
+    base = datetime(2025, 10, 3)
+    issues = []
+    for i, count in enumerate([6, 9, 4, 12, 8]):
+        day = base + timedelta(days=i * 7)
+        paper_ids = [f"issue_{i}_{j}" for j in range(count)]
+        issues.append({
+            "date": day.strftime("%Y-%m-%d"),
+            "label": day.strftime("%b %d, %Y"),
+            "html": "",
+            "paper_ids": paper_ids,
+            "paper_count": count,
+        })
+    return list(reversed(issues))
+
+
 @pytest.fixture(scope="module")
 def viz_server(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("viz_trends")
@@ -102,6 +119,8 @@ def viz_server(tmp_path_factory):
     os.makedirs(data_dir, exist_ok=True)
     with open(os.path.join(data_dir, "graph.json"), "w") as f:
         json.dump(_build_sample_graph(), f)
+    with open(os.path.join(data_dir, "newsletters.json"), "w") as f:
+        json.dump(_build_sample_newsletters(), f)
 
     handler = http.server.SimpleHTTPRequestHandler
     os.chdir(dest)
@@ -149,9 +168,6 @@ class TestTrendsOverlay:
         paths = page.query_selector_all("#trends-streamgraph svg path.trends-stream-path")
         assert len(paths) >= 2, f"expected ≥2 stream paths, got {len(paths)}"
 
-        # Tag-share renders
-        page.wait_for_selector("#trends-tagshare svg", timeout=2000)
-
         # Rising list rendered
         rising_items = page.query_selector_all("#trends-rising .trends-list-item")
         assert len(rising_items) >= 1
@@ -167,6 +183,36 @@ class TestTrendsOverlay:
         assert len(lines) >= 3, f"expected ≥3 keyword lines, got {len(lines)}"
         chips = page.query_selector_all("#trends-kw-legend .trends-kw-chip")
         assert len(chips) == len(lines), "legend chip count should match line count"
+
+    def test_newsletter_volume_chart_renders(self, page):
+        overlay = page.query_selector("#trends-overlay")
+        if "hidden" in overlay.get_attribute("class"):
+            page.click("#trends-toggle")
+            page.wait_for_selector("#trends-overlay:not(.hidden)", timeout=3000)
+        page.wait_for_selector(
+            "#trends-newsletter-volume svg rect.trends-newsletter-bar",
+            timeout=3000,
+        )
+        bars = page.query_selector_all(
+            "#trends-newsletter-volume svg rect.trends-newsletter-bar"
+        )
+        assert len(bars) == len(_build_sample_newsletters())
+        page.keyboard.press("Escape")
+        page.wait_for_function(
+            "document.getElementById('trends-overlay').classList.contains('hidden')",
+            timeout=2000,
+        )
+
+    def test_newsletter_volume_aggregation_deduplicates_ids(self, page):
+        counts = page.evaluate(
+            """
+            () => window.Trends._aggregateNewsletterVolume([
+              {date: '2026-01-09', label: 'Jan 09, 2026', paper_ids: ['a', 'b', 'a']},
+              {date: '2026-01-02', label: 'Jan 02, 2026', html: '<a data-paper-id="c"></a><a data-paper-id="c"></a>'}
+            ]).map(d => d.count)
+            """
+        )
+        assert counts == [1, 2]
 
     def test_clicking_keyword_chip_sets_search(self, page):
         # Ensure overlay is closed, search is clear

@@ -14,7 +14,6 @@
   var TOP_N_KEYWORDS = 10;          // keyword lines shown
   var KEYWORD_MIN_LEN = 3;
   var OTHER_COLOR = { light: "#b0b5c0", dark: "#4a4f60" };
-  var TAG_KEYS = ["security", "cyber", "general"];
   // Tableau10-ish palette, readable on both themes
   var KEYWORD_PALETTE = [
     "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f",
@@ -50,7 +49,7 @@
   var streamEl = document.getElementById("trends-streamgraph");
   var keywordsEl = document.getElementById("trends-keywords");
   var keywordsLegendEl = document.getElementById("trends-kw-legend");
-  var tagShareEl = document.getElementById("trends-tagshare");
+  var newsletterVolumeEl = document.getElementById("trends-newsletter-volume");
   var risingEl = document.getElementById("trends-rising");
   var coolingEl = document.getElementById("trends-cooling");
   var captionEl = document.getElementById("trends-caption");
@@ -63,6 +62,9 @@
   var resizeObserver = null;
   var resizeTimer = null;
   var currentSeries = null;   // cached aggregation (bins, clusterSeries, tagSeries)
+  var newsletterData = null;
+  var newsletterLoading = false;
+  var newsletterLoadFailed = false;
 
   // --- Helpers -------------------------------------------------------------
   function theme() {
@@ -73,10 +75,6 @@
   function pickColor(color) {
     if (!color) return "#888";
     return color[theme()] || color.dark || color.light || "#888";
-  }
-
-  function cssVar(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
   function parseDate(s) {
@@ -177,20 +175,47 @@
     return series;
   }
 
-  function aggregateByTagWeek(nodes, bins) {
-    var binIndex = {};
-    bins.forEach(function (b, i) { binIndex[b.getTime()] = i; });
-    var out = {};
-    TAG_KEYS.forEach(function (t) { out[t] = new Array(bins.length).fill(0); });
-    nodes.forEach(function (n) {
-      var tag = TAG_KEYS.indexOf(n.tag) >= 0 ? n.tag : "general";
-      var d = parseDate(n.published);
-      if (!d) return;
-      var idx = binIndex[weekStart(d).getTime()];
-      if (idx == null) return;
-      out[tag][idx] += 1;
-    });
-    return out;
+  function extractNewsletterPaperIds(entry) {
+    var ids = [];
+    var seen = {};
+    function add(id) {
+      id = String(id || "").trim();
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      ids.push(id);
+    }
+
+    if (Array.isArray(entry.paper_ids)) {
+      entry.paper_ids.forEach(add);
+    }
+
+    if (!ids.length && entry.html) {
+      var re = /data-paper-id=["']([^"']+)["']/g;
+      var match;
+      while ((match = re.exec(entry.html)) !== null) add(match[1]);
+    }
+    return ids;
+  }
+
+  function aggregateNewsletterVolume(newsletters) {
+    if (!Array.isArray(newsletters)) return [];
+    return newsletters.map(function (entry) {
+      var d = parseDate(entry.date);
+      if (!d) return null;
+      var paperIds = extractNewsletterPaperIds(entry);
+      var count = null;
+      if (entry.paper_count != null && entry.paper_count !== "") {
+        var parsed = Number(entry.paper_count);
+        if (isFinite(parsed)) count = Math.max(0, Math.round(parsed));
+      }
+      if (count == null) count = paperIds.length;
+      return {
+        date: d,
+        label: entry.label || formatDate(d),
+        count: count,
+        paperIds: paperIds,
+      };
+    }).filter(Boolean).sort(function (a, b) { return a.date - b.date; });
   }
 
   // --- Keyword aggregation (title tokens) ---------------------------------
@@ -564,79 +589,110 @@
     close();
   }
 
-  function renderTagShare(container, tagSeries, bins) {
+  function renderNewsletterVolume(container, issueSeries) {
     container.innerHTML = "";
-    if (!bins.length) {
-      container.innerHTML = '<div class="trends-empty">No data.</div>';
+    if (!issueSeries.length) {
+      container.innerHTML = '<div class="trends-empty">No newsletter data available.</div>';
       return;
     }
+
     var rect = container.getBoundingClientRect();
     var width = Math.max(320, rect.width);
-    var height = 56;
-    var margin = { top: 4, right: 10, bottom: 20, left: 10 };
+    var height = Math.max(130, rect.height || 144);
+    var margin = { top: 8, right: 10, bottom: 28, left: 34 };
 
     var svg = d3.select(container).append("svg")
       .attr("viewBox", "0 0 " + width + " " + height)
       .attr("preserveAspectRatio", "none");
 
-    var stackData = bins.map(function (b, i) {
-      var row = { __date: b };
-      TAG_KEYS.forEach(function (t) { row[t] = tagSeries[t][i]; });
-      return row;
-    });
+    var extent = d3.extent(issueSeries, function (d) { return d.date; });
+    var minDate = extent[0];
+    var maxDate = extent[1];
+    if (+minDate === +maxDate) {
+      minDate = new Date(+minDate - WEEK_MS / 2);
+      maxDate = new Date(+maxDate + WEEK_MS / 2);
+    }
 
-    var stack = d3.stack().keys(TAG_KEYS).offset(d3.stackOffsetExpand); // normalized share
-    var stacked = stack(stackData);
+    var x = d3.scaleTime()
+      .domain([minDate, maxDate])
+      .range([margin.left, width - margin.right]);
 
-    var x = d3.scaleTime().domain(d3.extent(bins)).range([margin.left, width - margin.right]);
-    var y = d3.scaleLinear().domain([0, 1]).range([height - margin.bottom, margin.top]);
-
-    var area = d3.area()
-      .x(function (d) { return x(d.data.__date); })
-      .y0(function (d) { return y(d[0]); })
-      .y1(function (d) { return y(d[1]); })
-      .curve(d3.curveStepAfter);
-
-    var tagColor = {
-      security: cssVar("--color-security") || "#4f6df5",
-      cyber: cssVar("--color-cyber") || "#e67e22",
-      general: cssVar("--color-general") || "#95a5a6",
-    };
-
-    svg.append("g").selectAll("path")
-      .data(stacked)
-      .join("path")
-      .attr("d", area)
-      .attr("fill", function (d) { return tagColor[d.key]; })
-      .attr("opacity", 0.85);
+    var yMax = d3.max(issueSeries, function (d) { return d.count; }) || 1;
+    var y = d3.scaleLinear()
+      .domain([0, yMax]).nice()
+      .range([height - margin.bottom, margin.top]);
 
     svg.append("g")
       .attr("class", "trends-axis")
       .attr("transform", "translate(0," + (height - margin.bottom) + ")")
       .call(d3.axisBottom(x).ticks(Math.min(8, Math.max(3, Math.floor(width / 130)))).tickSizeOuter(0));
 
-    // Invisible hover rect per bin for tooltip
-    var bw = (width - margin.left - margin.right) / bins.length;
+    svg.append("g")
+      .attr("class", "trends-axis")
+      .attr("transform", "translate(" + margin.left + ",0)")
+      .call(d3.axisLeft(y).ticks(Math.min(4, yMax)).tickFormat(d3.format("d")).tickSizeOuter(0));
+
+    var plotWidth = width - margin.left - margin.right;
+    var barWidth = Math.max(4, Math.min(28, plotWidth / Math.max(issueSeries.length, 1) * 0.55));
+
     svg.append("g").selectAll("rect")
-      .data(bins)
+      .data(issueSeries)
       .join("rect")
-      .attr("x", function (d, i) { return margin.left + i * bw; })
-      .attr("y", margin.top)
-      .attr("width", bw)
-      .attr("height", height - margin.top - margin.bottom)
-      .attr("fill", "transparent")
+      .attr("class", "trends-newsletter-bar")
+      .attr("x", function (d) { return x(d.date) - barWidth / 2; })
+      .attr("y", function (d) { return y(d.count); })
+      .attr("width", barWidth)
+      .attr("height", function (d) { return Math.max(1, y(0) - y(d.count)); })
+      .attr("rx", 3)
       .on("mousemove", function (event, d) {
-        var i = bins.indexOf(d);
-        var total = TAG_KEYS.reduce(function (a, t) { return a + tagSeries[t][i]; }, 0);
-        var html = '<strong>Week of ' + formatDate(d) + '</strong><br/>';
-        TAG_KEYS.forEach(function (t) {
-          var v = tagSeries[t][i];
-          var pct = total ? Math.round((v / total) * 100) : 0;
-          html += '<span class="trends-tooltip-meta">' + t + ': ' + v + ' (' + pct + '%)</span><br/>';
-        });
-        showTooltip(event, html);
+        showTooltip(event,
+          '<strong>' + escapeHtml(d.label) + '</strong><br/>' +
+          d.count + ' paper' + (d.count === 1 ? '' : 's') + ' in newsletter'
+        );
       })
       .on("mouseleave", hideTooltip);
+  }
+
+  function loadNewsletterData() {
+    if (newsletterData !== null || newsletterLoading || newsletterLoadFailed) return;
+    if (typeof fetch !== "function") {
+      newsletterLoadFailed = true;
+      return;
+    }
+    newsletterLoading = true;
+    fetch("data/newsletters.json")
+      .then(function (r) {
+        if (!r.ok) throw new Error("Failed to load newsletters");
+        return r.json();
+      })
+      .then(function (items) {
+        newsletterData = Array.isArray(items) ? items : [];
+        newsletterLoading = false;
+        if (newsletterVolumeEl && !overlay.classList.contains("hidden")) {
+          renderNewsletterVolume(newsletterVolumeEl, aggregateNewsletterVolume(newsletterData));
+        }
+      })
+      .catch(function () {
+        newsletterLoading = false;
+        newsletterLoadFailed = true;
+        if (newsletterVolumeEl) {
+          newsletterVolumeEl.innerHTML = '<div class="trends-empty">Failed to load newsletter volume.</div>';
+        }
+      });
+  }
+
+  function renderNewsletterSection() {
+    if (!newsletterVolumeEl) return;
+    if (newsletterLoadFailed) {
+      newsletterVolumeEl.innerHTML = '<div class="trends-empty">Failed to load newsletter volume.</div>';
+      return;
+    }
+    if (newsletterData !== null) {
+      renderNewsletterVolume(newsletterVolumeEl, aggregateNewsletterVolume(newsletterData));
+      return;
+    }
+    newsletterVolumeEl.innerHTML = '<div class="trends-empty">Loading newsletter volume...</div>';
+    loadNewsletterData();
   }
 
   // --- Cluster filter bridge ----------------------------------------------
@@ -682,13 +738,11 @@
     if (!data || !Array.isArray(data.nodes)) return null;
     var bins = computeWeeklyBins(data.nodes);
     var clusterSeries = aggregateByClusterWeek(data.nodes, bins, data.topic_regions);
-    var tagSeries = aggregateByTagWeek(data.nodes, bins);
     var keywordSeries = aggregateKeywordsByWeek(data.nodes, bins, { topN: TOP_N_KEYWORDS });
     var rc = computeRisingCooling(clusterSeries, RISING_WINDOW_WEEKS);
     return {
       bins: bins,
       clusterSeries: clusterSeries,
-      tagSeries: tagSeries,
       keywordSeries: keywordSeries,
       rising: rc.rising,
       cooling: rc.cooling,
@@ -704,7 +758,7 @@
       if (keywordsLegendEl) keywordsLegendEl.innerHTML = "";
       risingEl.innerHTML = "";
       coolingEl.innerHTML = "";
-      tagShareEl.innerHTML = "";
+      renderNewsletterSection();
       captionEl.textContent = "";
       return;
     }
@@ -714,7 +768,7 @@
     }
     renderRisingCoolingList(risingEl, currentSeries.rising, "rising");
     renderRisingCoolingList(coolingEl, currentSeries.cooling, "cooling");
-    renderTagShare(tagShareEl, currentSeries.tagSeries, currentSeries.bins);
+    renderNewsletterSection();
 
     var first = currentSeries.bins[0];
     var last = currentSeries.bins[currentSeries.bins.length - 1];
@@ -765,8 +819,8 @@
     close: close,
     _computeWeeklyBins: computeWeeklyBins,
     _aggregateByClusterWeek: aggregateByClusterWeek,
-    _aggregateByTagWeek: aggregateByTagWeek,
     _aggregateKeywordsByWeek: aggregateKeywordsByWeek,
+    _aggregateNewsletterVolume: aggregateNewsletterVolume,
     _tokenize: tokenize,
     _computeRisingCooling: computeRisingCooling,
   };
