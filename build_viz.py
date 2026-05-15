@@ -54,6 +54,10 @@ HDBSCAN_MIN_SAMPLES = 2
 SIMILARITY_THRESHOLD = 0.55
 SIMILARITY_MAX_K = 5
 UMAP_STATE_PATH = "umap_state.json"
+UMAP_MIN_DIST = 0.55
+UMAP_SPREAD = 2.0
+UMAP_NORMALIZE_QUANTILE = 0.02
+UMAP_POSITION_LIMIT = 1.08
 CLUSTER_MATCH_JACCARD_THRESHOLD = 0.5
 
 # 15-color palette for topic regions (light/dark variants)
@@ -535,7 +539,30 @@ def compute_hulls(clusters, positions, radius=0.04, resolution=24, *, pad=None):
 # Layout
 # ---------------------------------------------------------------------------
 
-def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43,
+def _normalize_layout_coords(coords, quantile=UMAP_NORMALIZE_QUANTILE,
+                             position_limit=UMAP_POSITION_LIMIT):
+    """Normalize coordinates while limiting the effect of distant outliers."""
+    normalized = coords.copy()
+
+    for dim in range(2):
+        values = coords[:, dim]
+        lo, hi = values.min(), values.max()
+
+        if 0 < quantile < 0.5 and len(values) >= 20:
+            q_lo, q_hi = np.quantile(values, [quantile, 1 - quantile])
+            if q_hi - q_lo > 1e-12:
+                lo, hi = q_lo, q_hi
+
+        if hi - lo > 1e-12:
+            normalized[:, dim] = 2 * (values - lo) / (hi - lo) - 1
+        else:
+            normalized[:, dim] = 0
+
+    return np.clip(normalized, -position_limit, position_limit)
+
+
+def _compute_umap_layout(nodes, embeddings, min_dist=UMAP_MIN_DIST,
+                         spread=UMAP_SPREAD, seed=43,
                          prev_raw_positions=None, umap_state_path=UMAP_STATE_PATH):
     """Compute 2D positions via UMAP on the embedding vectors.
 
@@ -611,11 +638,9 @@ def _compute_umap_layout(nodes, embeddings, min_dist=0.3, spread=1.5, seed=43,
     logger.info("Saved raw UMAP state to %s (%d entries).",
                 umap_state_path, len(raw_positions))
 
-    # Normalise to [-1, 1]
-    for dim in range(2):
-        lo, hi = coords[:, dim].min(), coords[:, dim].max()
-        if hi - lo > 0:
-            coords[:, dim] = 2 * (coords[:, dim] - lo) / (hi - lo) - 1
+    # Normalise to a stable display range. Percentile-based bounds keep a
+    # small number of distant topics from compressing the main semantic cloud.
+    coords = _normalize_layout_coords(coords)
 
     return {pid: {"x": float(coords[i, 0]), "y": float(coords[i, 1])}
             for i, pid in enumerate(ids)}

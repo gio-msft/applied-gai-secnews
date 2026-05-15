@@ -11,6 +11,7 @@ from build_viz import (
     compute_similarity_edges,
     compute_topic_clusters,
     _match_clusters_to_previous,
+    _normalize_layout_coords,
 )
 
 
@@ -289,6 +290,30 @@ class TestComputeHulls:
         d_small = max_dist(clusters_small[0]["hull"], clusters_small[0]["centroid"])
         d_large = max_dist(clusters_large[0]["hull"], clusters_large[0]["centroid"])
         assert d_large > d_small
+
+
+# ---------------------------------------------------------------------------
+# layout normalization
+# ---------------------------------------------------------------------------
+
+class TestNormalizeLayoutCoords:
+
+    def test_robust_normalization_limits_outlier_compression(self):
+        main_cloud = np.array([[x, x * 0.2] for x in np.linspace(0, 1, 80)])
+        coords = np.vstack([main_cloud, [1.2, 20.0]])
+
+        full_range = _normalize_layout_coords(
+            coords, quantile=0, position_limit=1.08,
+        )
+        robust = _normalize_layout_coords(
+            coords, quantile=0.05, position_limit=1.08,
+        )
+
+        full_main_span = np.ptp(full_range[:-1, 1])
+        robust_main_span = np.ptp(robust[:-1, 1])
+
+        assert robust_main_span > full_main_span * 5
+        assert robust[-1, 1] == pytest.approx(1.08)
 
 
 # ---------------------------------------------------------------------------

@@ -156,7 +156,7 @@ papers.json ──► build_viz.py ──► docs/data/graph.json
                     ├── computes embeddings via Azure OpenAI text-embedding-3-large (cached in embeddings_cache.json)
                     ├── HDBSCAN topic clustering on PCA-reduced embeddings, LLM-generated cluster labels
                     ├── pre-computes structural layout (networkx spring_layout on citation + author edges)
-                    ├── pre-computes semantic layout (UMAP 2D projection of embedding vectors)
+                    ├── pre-computes semantic layout (UMAP 2D projection of embedding vectors with outlier-resistant display normalization)
                     ├── computes Shapely buffered-union bubble outlines per topic cluster
                     ├── outputs single graph.json with nodes + three edge arrays + dual positions + topic regions
                     └── exports summaries/*.md to docs/data/newsletters.json

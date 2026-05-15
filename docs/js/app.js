@@ -21,6 +21,7 @@
 
   const MIN_NODE_SIZE = 1;
   const MAX_NODE_SIZE = 6;
+  const SEMANTIC_NODE_SCALE = 0.84;
   const SCALE_FACTOR = 600; // spread pre-computed positions
 
   // --- State ---------------------------------------------------------------
@@ -390,6 +391,10 @@
     renderer.setSetting("nodeReducer", function (node, data) {
       var res = Object.assign({}, data);
       var dimColor = currentTheme() === "dark" ? "#1a1a2e" : "#d0d0d8";
+
+      if (activeLayer === "semantic") {
+        res.size = Math.max(MIN_NODE_SIZE, res.size * SEMANTIC_NODE_SCALE);
+      }
 
       // --- Tag filter: hide nodes whose tag is not active ---
       var nodeTag = (data._data && data._data.tag) || "general";
