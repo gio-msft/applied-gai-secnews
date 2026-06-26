@@ -75,7 +75,15 @@ def _fetch_batch(arxiv_ids, session):
     *arxiv_ids* should already be version-stripped.
     Returns the raw JSON response list (one entry per requested ID,
     ``None`` for papers not found).
+
+    The S2 batch endpoint returns a 400 when the response would be too
+    large (e.g. a single paper in the batch has very many citations/
+    references).  In that case we recursively split the batch so that the
+    offending paper is isolated and skipped, rather than failing the whole
+    request.
     """
+    if not arxiv_ids:
+        return []
     payload = {"ids": [f"ArXiv:{aid}" for aid in arxiv_ids]}
     for attempt in range(S2_MAX_RETRIES):
         resp = session.post(
@@ -92,6 +100,41 @@ def _fetch_batch(arxiv_ids, session):
             logger.warning("S2 rate-limited (%s), retrying in %.1fs…", resp.status_code, wait)
             time.sleep(wait)
             continue
+        if resp.status_code == 400:
+            # S2 returns 400 for the whole batch when none of the IDs are
+            # recognized (body: "No valid paper ids given").  This happens
+            # for very recent papers not yet indexed by S2.  Treat the whole
+            # batch as not-found instead of splitting/retrying.
+            body = ""
+            try:
+                body = (resp.json() or {}).get("error", "")
+            except ValueError:
+                body = resp.text
+            if "no valid paper ids" in body.lower():
+                logger.info(
+                    "S2 has no record of any of the %d papers in this batch "
+                    "(likely not yet indexed); caching as empty.",
+                    len(arxiv_ids),
+                )
+                return [None] * len(arxiv_ids)
+            if len(arxiv_ids) == 1:
+                # A single paper still fails for another reason (e.g. response
+                # too large).  Skip it (cache as not-found) so we don't crash.
+                logger.warning(
+                    "S2 returned 400 for single paper %s; skipping.", arxiv_ids[0]
+                )
+                return [None]
+            # Otherwise split the batch and retry each half independently.
+            mid = len(arxiv_ids) // 2
+            logger.warning(
+                "S2 returned 400 for batch of %d; splitting into %d + %d.",
+                len(arxiv_ids), mid, len(arxiv_ids) - mid,
+            )
+            time.sleep(S2_RATE_LIMIT_DELAY)
+            left = _fetch_batch(arxiv_ids[:mid], session)
+            time.sleep(S2_RATE_LIMIT_DELAY)
+            right = _fetch_batch(arxiv_ids[mid:], session)
+            return left + right
         resp.raise_for_status()
     logger.error("S2 batch request failed after %d retries", S2_MAX_RETRIES)
     return [None] * len(arxiv_ids)
