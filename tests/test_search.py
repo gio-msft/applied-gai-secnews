@@ -171,6 +171,16 @@ class TestProcessFeed:
             assert r["url"].endswith(".pdf")
             assert not r["url"].endswith(".pdf.pdf")
 
+    def test_historical_window_excludes_future_entries(self, tmp_db):
+        results = process_feed(
+            SAMPLE_ARXIV_FEED,
+            tmp_db,
+            published_gte="2026-01-15T00:00:00Z",
+            published_lt="2026-01-20T00:00:00Z",
+        )
+        assert [r["id"] for r in results] == ["2601.00001v1"]
+        assert len(tmp_db.find()) == 1
+
 
 class TestAssembleFeeds:
 
@@ -229,3 +239,16 @@ class TestPruneFeeds:
             paper_path="/nonexistent",
         )
         assert len(valid) == 1
+
+    def test_upper_boundary_excluded(self):
+        feeds = [
+            {"id": "inside", "published": "2026-02-09T23:59:59Z"},
+            {"id": "boundary", "published": "2026-02-10T00:00:00Z"},
+        ]
+        valid = prune_feeds(
+            feeds=feeds,
+            pull_window="2026-02-03T00:00:00Z",
+            published_lt="2026-02-10T00:00:00Z",
+            paper_path="/nonexistent",
+        )
+        assert [r["id"] for r in valid] == ["inside"]

@@ -47,20 +47,25 @@ class PaperDB:
                 return True
         return False
 
-    def find(self, published_gte=None, summarized=None):
+    def find(self, published_gte=None, published_lt=None, summarized=None):
         """Query papers by optional filters."""
         results = self._data
         if published_gte is not None:
             results = [r for r in results if r["published"] >= published_gte]
+        if published_lt is not None:
+            results = [r for r in results if r["published"] < published_lt]
         if summarized is not None:
             results = [r for r in results if r.get("summarized") == summarized]
         return results
 
-    def reset_summarized(self, published_gte):
+    def reset_summarized(self, published_gte, published_lt=None):
         """Reset summarized papers in the window so they can be re-processed."""
         count = 0
         for record in self._data:
-            if record["published"] >= published_gte and record.get("summarized"):
+            in_window = record["published"] >= published_gte
+            if published_lt is not None:
+                in_window = in_window and record["published"] < published_lt
+            if in_window and record.get("summarized"):
                 record["summarized"] = False
                 for key in ("points", "one_liner", "emoji", "tag", "affiliations", "relevant", "projects", "interest_score"):
                     record.pop(key, None)

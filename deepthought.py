@@ -177,11 +177,22 @@ except (FileNotFoundError, json.JSONDecodeError):
     PROJECTS = []
 
 
-def make_pull_window(process_days):
-    """Return pull_window as an ISO 8601 string."""
-    now = datetime.datetime.now(datetime.timezone.utc)
-    window = now - datetime.timedelta(days=process_days)
-    return window.strftime("%Y-%m-%dT%H:%M:%SZ")
+def make_processing_window(process_days, as_of=None):
+    """Return the half-open processing window and output issue date."""
+    if as_of:
+        issue_date = datetime.date.fromisoformat(as_of)
+        window_end = datetime.datetime.combine(
+            issue_date, datetime.time.min, tzinfo=datetime.timezone.utc
+        )
+    else:
+        window_end = datetime.datetime.now(datetime.timezone.utc)
+        issue_date = datetime.datetime.now().date()
+    window_start = window_end - datetime.timedelta(days=process_days)
+    return (
+        window_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        window_end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        issue_date.isoformat(),
+    )
 
 
 if __name__ == "__main__":
@@ -215,36 +226,67 @@ if __name__ == "__main__":
         "--build-viz", action="store_true",
         help="Build interactive graph visualization after sharing results",
     )
+    parser.add_argument(
+        "--as-of", metavar="YYYY-MM-DD",
+        help=(
+            "Replay the seven-day issue ending at 00:00 UTC on this date "
+            "and write output using this date"
+        ),
+    )
     args = parser.parse_args()
 
     logger.info("[$] Starting AIRT-GAI-SecNews...")
     os.makedirs(PAPER_PATH, exist_ok=True)
     paper_db = PaperDB(DB_PATH)
-    pull_window = make_pull_window(PROCESS_DAYS)
+    try:
+        pull_window, window_end, issue_date = make_processing_window(
+            PROCESS_DAYS, args.as_of
+        )
+    except ValueError:
+        parser.error("--as-of must be a valid date in YYYY-MM-DD format")
+    logger.info("[*] Processing window: %s <= published < %s", pull_window, window_end)
 
     if args.share_only:
         logger.info("[*] Share-only mode, skipping search/download/summarize...")
     elif args.resummarize:
-        count = paper_db.reset_summarized(pull_window)
+        count = paper_db.reset_summarized(pull_window, published_lt=window_end)
         logger.info("[*] Reset %d papers for re-summarization." % count)
     else:
         logger.info("[*] Executing searches...")
-        feeds = execute_searches(base=BASE_URL, params=SEARCHES, force=args.force_search)
+        feeds = execute_searches(
+            base=BASE_URL,
+            params=SEARCHES,
+            force=args.force_search or args.as_of is not None,
+        )
         logger.info("[*] Found %s feeds." % str(len(feeds)))
 
         logger.info("[*] Assembling feeds...")
-        results = assemble_feeds(feeds=feeds, paper_db=paper_db)
+        results = assemble_feeds(
+            feeds=feeds,
+            paper_db=paper_db,
+            published_gte=pull_window if args.as_of else None,
+            published_lt=window_end if args.as_of else None,
+        )
         logger.info("[*] Deduplication - %s results." % str(len(results)))
 
         logger.info("[*] Pruning feeds...")
-        valid = prune_feeds(feeds=results, pull_window=pull_window, paper_path=PAPER_PATH)
+        valid = prune_feeds(
+            feeds=results,
+            pull_window=pull_window,
+            paper_path=PAPER_PATH,
+            published_lt=window_end,
+        )
 
         logger.info("[*] Downloading %s papers..." % str(len(valid)))
         download_papers(results=valid, paper_db=paper_db, paper_path=PAPER_PATH)
 
     if not args.share_only:
         logger.info("[*] Assembling records for summary...")
-        records = assemble_records(pull_window=pull_window, paper_db=paper_db)
+        records = assemble_records(
+            pull_window=pull_window,
+            published_lt=window_end,
+            paper_db=paper_db,
+        )
         logger.info("[*] Found %s records to summarize." % str(len(records)))
 
         logger.info("[*] Summarizing %s papers..." % str(len(records)))
@@ -257,7 +299,11 @@ if __name__ == "__main__":
         )
 
         logger.info("[*] Classifying relevance...")
-        all_in_window = paper_db.find(published_gte=pull_window, summarized=True)
+        all_in_window = paper_db.find(
+            published_gte=pull_window,
+            published_lt=window_end,
+            summarized=True,
+        )
         classify_relevance(
             records=all_in_window,
             classifier=OAI,
@@ -268,7 +314,11 @@ if __name__ == "__main__":
         # Interactive review: show papers tagged security/cyber but marked irrelevant
         if not args.no_interactive and not args.include_general:
             borderline = [
-                r for r in paper_db.find(published_gte=pull_window, summarized=True)
+                r for r in paper_db.find(
+                    published_gte=pull_window,
+                    published_lt=window_end,
+                    summarized=True,
+                )
                 if r.get("tag") in ("security", "cyber") and r.get("relevant") is False
             ]
             if borderline:
@@ -294,19 +344,31 @@ if __name__ == "__main__":
         # Project relevance classification
         if PROJECTS:
             if args.reclassify_projects:
-                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                for r in paper_db.find(
+                    published_gte=pull_window,
+                    published_lt=window_end,
+                    summarized=True,
+                ):
                     if "projects" in r:
                         paper_db.update(r["id"], {"projects": None})
                         # Remove the key by re-reading (update merges, so set None
                         # then pop). Simpler: just delete from the record dict.
                 # Re-fetch after clearing
-                for r in paper_db.find(published_gte=pull_window, summarized=True):
+                for r in paper_db.find(
+                    published_gte=pull_window,
+                    published_lt=window_end,
+                    summarized=True,
+                ):
                     r.pop("projects", None)
                 paper_db._save()
                 logger.info("[*] Cleared project classifications for re-run.")
 
             relevant_papers = [
-                r for r in paper_db.find(published_gte=pull_window, summarized=True)
+                r for r in paper_db.find(
+                    published_gte=pull_window,
+                    published_lt=window_end,
+                    summarized=True,
+                )
                 if r.get("relevant") is True
             ]
             project_list_str = "\n".join(
@@ -331,6 +393,8 @@ if __name__ == "__main__":
         paper_db=paper_db,
         summaries_path=SUMMARIES_PATH,
         include_all=args.include_general,
+        published_lt=window_end,
+        issue_date=issue_date if args.as_of else None,
     )
 
     if args.build_viz:

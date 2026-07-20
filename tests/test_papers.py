@@ -165,3 +165,24 @@ class TestAssembleRecords:
         )
         assert len(records) == 1
         assert records[0]["id"] == "new_unsumm"
+
+    def test_excludes_unsummarized_at_upper_boundary(self, tmp_db):
+        for paper_id, published in [
+            ("inside", "2026-02-09T23:59:59Z"),
+            ("boundary", "2026-02-10T00:00:00Z"),
+        ]:
+            tmp_db.insert({
+                "id": paper_id,
+                "url": f"http://example.com/{paper_id}.pdf",
+                "published": published,
+                "title": paper_id,
+                "downloaded": True,
+                "summarized": False,
+            })
+
+        records = assemble_records(
+            pull_window="2026-02-03T00:00:00Z",
+            published_lt="2026-02-10T00:00:00Z",
+            paper_db=tmp_db,
+        )
+        assert [r["id"] for r in records] == ["inside"]

@@ -156,11 +156,16 @@ def execute_searches(
 # Feed processing functions
 
 
-def process_feed(response, paper_db) -> list:
+def process_feed(response, paper_db, published_gte=None, published_lt=None) -> list:
     """Process feed into list, inserting new papers into the database."""
     results = []
     feed = feedparser.parse(response)
     for entry in feed.entries:
+        published = _normalize_iso(entry.published)
+        if published_gte is not None and published < published_gte:
+            continue
+        if published_lt is not None and published >= published_lt:
+            continue
         url = "%s.pdf" % entry.id.replace("abs", "pdf")
         authors = [a.get("name", "") for a in getattr(entry, "authors", [])]
         obj = {
@@ -178,11 +183,18 @@ def process_feed(response, paper_db) -> list:
     return results
 
 
-def assemble_feeds(feeds: list, paper_db) -> list:
+def assemble_feeds(
+    feeds: list, paper_db, published_gte=None, published_lt=None
+) -> list:
     """Process all the feeds into a deduplicated list."""
     results = []
     for feed in feeds:
-        results += process_feed(feed, paper_db)
+        results += process_feed(
+            feed,
+            paper_db,
+            published_gte=published_gte,
+            published_lt=published_lt,
+        )
     seen = set()
     deduplicated = []
     for item in results:
@@ -192,7 +204,9 @@ def assemble_feeds(feeds: list, paper_db) -> list:
     return deduplicated
 
 
-def prune_feeds(feeds: list, pull_window: str, paper_path: str) -> list:
+def prune_feeds(
+    feeds: list, pull_window: str, paper_path: str, published_lt=None
+) -> list:
     """Prune the list of feeds to only those within the time window and not yet downloaded."""
     valid = []
     for feed in feeds:
@@ -200,6 +214,8 @@ def prune_feeds(feeds: list, pull_window: str, paper_path: str) -> list:
         # but in-memory feed objects still have the raw arxiv date
         published = _normalize_iso(feed["published"])
         if published < pull_window:
+            continue
+        if published_lt is not None and published >= published_lt:
             continue
         filename = Path(paper_path) / (feed["id"] + ".pdf")
         if filename.is_file():

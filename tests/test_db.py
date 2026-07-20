@@ -119,6 +119,14 @@ class TestPaperDBFind:
         ids = {r["id"] for r in results}
         assert "2026-02" in ids
 
+    def test_find_published_lt_boundary(self, tmp_db):
+        self._populate(tmp_db)
+        results = tmp_db.find(
+            published_gte="2026-02-01T00:00:00Z",
+            published_lt="2026-03-10T00:00:00Z",
+        )
+        assert {r["id"] for r in results} == {"2026-02"}
+
     def test_find_summarized_filter(self, tmp_db):
         self._populate(tmp_db)
         assert len(tmp_db.find(summarized=True)) == 2
@@ -235,6 +243,15 @@ class TestPaperDBResetSummarized:
         self._populate(tmp_db)
         count = tmp_db.reset_summarized("2027-01-01T00:00:00Z")
         assert count == 0
+
+    def test_respects_upper_bound(self, tmp_db):
+        self._populate(tmp_db)
+        count = tmp_db.reset_summarized(
+            "2026-02-15T00:00:00Z",
+            published_lt="2026-02-15T00:00:00Z",
+        )
+        assert count == 0
+        assert tmp_db.find()[1]["summarized"] is True
 
 
 class TestPaperDBPersistence:

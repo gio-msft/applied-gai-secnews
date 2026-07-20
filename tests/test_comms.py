@@ -304,6 +304,34 @@ class TestShareResults:
         assert "AIRT Gen AI Security News" in content
         assert "Content-Type: text/html" in content
 
+    def test_historical_issue_uses_date_and_upper_bound(
+        self, tmp_path, tmp_db, sample_summarized_record
+    ):
+        tmp_db.insert(sample_summarized_record)
+        future_record = dict(sample_summarized_record)
+        future_record.update({
+            "id": "future",
+            "url": "http://arxiv.org/pdf/future.pdf",
+            "published": "2026-07-10T00:00:00Z",
+            "title": "Future Paper",
+        })
+        tmp_db.insert(future_record)
+
+        summaries_path = str(tmp_path / "summaries")
+        share_results(
+            pull_window="2026-01-01T00:00:00Z",
+            published_lt="2026-07-10T00:00:00Z",
+            issue_date="2026-07-10",
+            paper_db=tmp_db,
+            summaries_path=summaries_path,
+        )
+
+        markdown = (Path(summaries_path) / "2026-07-10.md").read_text()
+        eml = (Path(summaries_path) / "2026-07-10.eml").read_text()
+        assert sample_summarized_record["title"] in markdown
+        assert "Future Paper" not in markdown
+        assert "[2026-07-10] AIRT Gen AI Security News" in eml
+
     def test_returns_false_when_no_records(self, tmp_db, tmp_path):
         """If no summarized records exist in the window, returns False."""
         result = share_results(

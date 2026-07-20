@@ -101,10 +101,16 @@ def share_results(
     paper_db,
     summaries_path: str,
     include_all: bool = False,
+    published_lt: str = None,
+    issue_date: str = None,
 ) -> bool:
     """Prepare summarized results and write markdown + eml files."""
     try:
-        records = paper_db.find(published_gte=pull_window, summarized=True)
+        records = paper_db.find(
+            published_gte=pull_window,
+            published_lt=published_lt,
+            summarized=True,
+        )
         if not records:
             return False
 
@@ -132,8 +138,8 @@ def share_results(
         markdown = "".join(_format_record_markdown(r) for r in records)
         html = "".join(_format_record_html(r) for r in records)
 
-        _create_markdown_file(summaries_path, markdown)
-        _create_eml_file(summaries_path, html)
+        _create_markdown_file(summaries_path, markdown, issue_date=issue_date)
+        _create_eml_file(summaries_path, html, issue_date=issue_date)
         return True
 
     except Exception as e:
@@ -141,13 +147,16 @@ def share_results(
         return False
 
 
-def _create_markdown_file(summaries_path: str, markdown_content: str) -> None:
+def _create_markdown_file(
+    summaries_path: str, markdown_content: str, issue_date: str = None
+) -> None:
     """Create a markdown file with the summary content."""
     try:
         summaries_dir = Path(summaries_path)
         summaries_dir.mkdir(exist_ok=True)
 
-        filename = f"{datetime.datetime.now().strftime('%Y-%m-%d')}.md"
+        output_date = issue_date or datetime.datetime.now().strftime("%Y-%m-%d")
+        filename = f"{output_date}.md"
         markdown_file = summaries_dir / filename
 
         markdown_file.write_text(markdown_content)
@@ -157,13 +166,15 @@ def _create_markdown_file(summaries_path: str, markdown_content: str) -> None:
         logger.error(f"Failed to create markdown file: {e}")
 
 
-def _create_eml_file(summaries_path: str, html_content: str) -> None:
+def _create_eml_file(
+    summaries_path: str, html_content: str, issue_date: str = None
+) -> None:
     """Create an .eml file that opens directly in Outlook with formatting."""
     try:
         summaries_dir = Path(summaries_path)
         summaries_dir.mkdir(exist_ok=True)
 
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        today = issue_date or datetime.datetime.now().strftime("%Y-%m-%d")
         filename = f"{today}.eml"
 
         body_html = (

@@ -66,9 +66,13 @@ def download_paper(url, paper_db, paper_path: str) -> bool:
     return True
 
 
-def assemble_records(pull_window: str, paper_db) -> list:
+def assemble_records(pull_window: str, paper_db, published_lt=None) -> list:
     """Gather any records in process window not yet summarized."""
-    return paper_db.find(published_gte=pull_window, summarized=False)
+    return paper_db.find(
+        published_gte=pull_window,
+        published_lt=published_lt,
+        summarized=False,
+    )
 
 
 def read_pages(reader) -> dict:

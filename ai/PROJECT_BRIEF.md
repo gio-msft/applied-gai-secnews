@@ -78,6 +78,9 @@ conda activate papers
 # Normal run (search + download + summarize + classify + share)
 python deepthought.py
 
+# Replay a missed Friday issue (processes the prior seven UTC calendar days)
+python deepthought.py --as-of 2026-07-10 --no-interactive
+
 # Re-run searches ignoring cache
 python deepthought.py --force-search
 
@@ -201,3 +204,4 @@ docs/
 - **`reset_summarized()` must list all derived fields** to pop. When adding new fields to the record schema, update the tuple in `utils_db.py` (`points`, `one_liner`, `emoji`, `tag`, `affiliations`, `relevant`, `projects`, `interest_score`).
 - **arXiv rate limits**: The API has undocumented rate limits. The pipeline sleeps between requests but can still get 503s under heavy load.
 - **Search cache is time-based only** (`search_state.json`). If you change a query string, the old cache entry becomes stale automatically (different key), but the old results from the previous query remain in the DB.
+- **Historical replay**: `--as-of YYYY-MM-DD` processes the half-open interval from seven days before the issue date at `00:00 UTC` through the issue date at `00:00 UTC`, forces fresh arXiv searches, excludes later papers from ingestion, and writes the requested date into the `.md`/`.eml` filenames and email subject. Replays reproduce the pipeline's date boundaries, but arXiv may expose newer paper revisions and LLM output can differ from what a literal historical run would have produced.
