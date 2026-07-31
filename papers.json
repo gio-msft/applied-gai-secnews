@@ -171909,5 +171909,2594 @@
     ],
     "interest_score": 7,
     "relevant": false
+  },
+  {
+    "id": "2607.22545v1",
+    "url": "http://arxiv.org/pdf/2607.22545v1.pdf",
+    "published": "2026-05-06T10:14:30Z",
+    "title": "Semalith v1.4: A Calibrated 184M Safety Classifier Achieving State-of-the-Art Prompt-Injection Detection at 44x Fewer Parameters than Llama-Guard-3-8B",
+    "authors": [
+      "Tejasvi C. Addagada"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2604.01194v2",
+    "url": "http://arxiv.org/pdf/2604.01194v2.pdf",
+    "published": "2026-04-01T17:40:03Z",
+    "title": "AgentWatcher: A Rule-based Prompt Injection Monitor",
+    "authors": [
+      "Yanting Wang",
+      "Wei Zou",
+      "Runpeng Geng",
+      "Jinyuan Jia"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2606.04425v2",
+    "url": "http://arxiv.org/pdf/2606.04425v2.pdf",
+    "published": "2026-06-03T04:14:17Z",
+    "title": "What If Prompt Injection Never Left? Rethinking Agent Security through Cross-Session Stored Prompt Injection",
+    "authors": [
+      "Yuanbo Xie",
+      "Wenlei Zhu",
+      "Tianyun Liu",
+      "Yingjie Zhang",
+      "Suchen Liu",
+      "Yulin Li",
+      "Liya Su",
+      "Tingwen Liu"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2606.13385v2",
+    "url": "http://arxiv.org/pdf/2606.13385v2.pdf",
+    "published": "2026-06-11T14:12:43Z",
+    "title": "Who Pays the Price? Stakeholder-Centric Prompt Injection Benchmarking for Real-world Web Agents",
+    "authors": [
+      "Zihao Wang",
+      "Yiming Li",
+      "Yutong Wu",
+      "Kangjie Chen",
+      "Zheyu Liu",
+      "Fok Kar Wai",
+      "Pin-Yu Chen",
+      "Vrizlynn L. L. Thing",
+      "Bo Li",
+      "Dacheng Tao",
+      "Tianwei Zhang"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26115v1",
+    "url": "http://arxiv.org/pdf/2607.26115v1.pdf",
+    "published": "2026-07-28T16:03:39Z",
+    "title": "GPT-Red: Automated Red Teaming via Self-Play at Scale",
+    "authors": [
+      "Eric Wallace",
+      "Christopher A. Choquette-Choo",
+      "Nikhil Kandpal",
+      "Sam Toyer",
+      "Dylan Hunn",
+      "Stephanie Lin",
+      "Yuxin Wen",
+      "Xiangyu Qi",
+      "Christopher Wolff",
+      "Zizhao Wang",
+      "Milad Nasr",
+      "Sicheng Zhu",
+      "Chuan Guo",
+      "Juan Felipe Cer\u00f3n Uribe",
+      "Kaiwen Wang",
+      "Aiden Low",
+      "Kai Xiao",
+      "Kai Chen"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A self-play\u2013trained red-teaming agent (GPT-Red) surpassed both prompted baselines (e.g., GPT-5.5) and human red-teamers on held-out indirect prompt-injection challenges, with performance that continues to scale up as more test-time defender queries are allowed.",
+      "Using GPT-Red attacks for adversarial RL training produced large robustness gains in newer defenders, including a jump on hard \u201cfake chain-of-thought\u201d direct prompt-injection tests from 5.2% to 95.9% robustness (GPT-5.1 \u2192 GPT-5.6).",
+      "On an automated red-teaming exercise mirroring the 2025 Q4 IPI challenge, the latest defender (GPT-5.6) reached <4% attack success rate, and it achieved ~100% robustness on the human-written IPI 2025 Challenge dataset with only one misgraded case after human validation."
+    ],
+    "one_liner": "Training an attacker via large-scale self-play creates a compounding \u201cattacker\u2013defender flywheel\u201d that converts inference-time red-teaming search into measurable, step-change robustness against prompt injection.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "OpenAI"
+    ],
+    "interest_score": 9,
+    "relevant": true,
+    "projects": [
+      "gan-grpo-model-research",
+      "agentic-prompt-injection-grpo"
+    ]
+  },
+  {
+    "id": "2607.22024v1",
+    "url": "http://arxiv.org/pdf/2607.22024v1.pdf",
+    "published": "2026-07-24T06:43:09Z",
+    "title": "Agent Security Needs Redefinition through a Holistic Framework",
+    "authors": [
+      "Vincent Siu",
+      "Jingxuan He",
+      "Kyle Montgomery",
+      "Zhun Wang",
+      "Chenguang Wang",
+      "Dawn Song"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.28226v1",
+    "url": "http://arxiv.org/pdf/2607.28226v1.pdf",
+    "published": "2026-07-30T13:58:33Z",
+    "title": "Security of World-Model-Based Embodied AI: A Lifecycle of Threats, Defenses, and Evaluation",
+    "authors": [
+      "Fazhong Liu",
+      "Zhuoyan Chen",
+      "Haozhen Tan",
+      "Yan Meng",
+      "Guoxing Chen",
+      "Haojin Zhu"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "World models create a new security boundary in embodied AI where compromises in data, sensors, prompts, memory, tools, or simulators can corrupt internal state and imagined rollouts, propagating into unsafe physical actions rather than merely incorrect predictions.",
+      "A lifecycle taxonomy clarifies that familiar attack classes (poisoning, backdoors, adversarial examples, sensor spoofing, prompt injection, trajectory manipulation, and supply-chain compromise) map onto distinct world-model security objects\u2014especially state integrity, dynamics fidelity, trajectory-ranking integrity, uncertainty calibration, and feedback provenance\u2014making trajectory-level and long-horizon failures first-class risks.",
+      "Using world models as runtime safety checkers is dual-use: they can block risky actions, but if subverted they can produce \u201cpredictive safety illusions\u201d where an unsafe action is falsely certified as safe, implying evaluation must track predicted-safe-but-actually-unsafe executions and monitor confidence rather than only task success or collision rate."
+    ],
+    "one_liner": "The key insight is that predictive imagination and safety monitoring become attack surfaces themselves\u2014so \u201clooks safe in rollout\u201d can be the failure mode.",
+    "emoji": "\ud83e\udd16",
+    "tag": "security",
+    "affiliations": [],
+    "interest_score": 6,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24625v1",
+    "url": "http://arxiv.org/pdf/2607.24625v1.pdf",
+    "published": "2026-07-27T16:19:45Z",
+    "title": "Agentic Permissions Policy Algebra for Taint Confinement in LLM Agents",
+    "authors": [
+      "Arseny Kravchenko",
+      "Vadim Liventsev",
+      "Innokentii Konstantinov",
+      "Ildar Iskhakov",
+      "Matvey Kukuy"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "An engine-managed branching IFC design confines taint by running sensitive reads in child trajectories and only merging sanitized/adequate derivatives, with formal guarantees that parent labels are preserved exactly unless an explicit restrictive return is accepted.",
+      "Prospective acquisition enforcement turns \u201clabel creep\u201d into pre-dispatch, auditable remedy plans (Accept/Authorize) and single-call atomic rulings, preventing persistent privilege escalation while still allowing narrowly scoped exceptions.",
+      "On a 14-scenario multi-turn tool-chaining benchmark across four models, the approach reduced attack success from 31%\u201350% in open baselines to 0%\u20137% under enforcement, while branching improved utility vs. no-branching by 16\u201326 points on three models (e.g., 69%\u219295%, 28%\u219244%, 54%\u219272%)."
+    ],
+    "one_liner": "The key insight is that taint tracking can be made usable for LLM agents by treating sensitive reads as disposable sub-trajectories with prospective checks and atomic, per-call governance overrides.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "Archestra AI"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2601.07853v2",
+    "url": "http://arxiv.org/pdf/2601.07853v2.pdf",
+    "published": "2026-01-09T03:25:45Z",
+    "title": "FinVault: Benchmarking Financial Agent Safety in Execution-Grounded Environments",
+    "authors": [
+      "Zhi Yang",
+      "Runguo Li",
+      "Qiqi Qiang",
+      "Jiashun Wang",
+      "Fangqi Lou",
+      "Mengping Li",
+      "Dongpo Cheng",
+      "Rui Xu",
+      "Heng Lian",
+      "Shuo Zhang",
+      "Xiaolong Liang",
+      "Xiaoming Huang",
+      "Zheng Wei",
+      "Zhaowei Liu",
+      "Xin Guo",
+      "Huacan Wang",
+      "Ronghao Chen",
+      "Liwen Zhang"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23532v1",
+    "url": "http://arxiv.org/pdf/2607.23532v1.pdf",
+    "published": "2026-07-26T08:02:20Z",
+    "title": "Mission-Level Runtime Assurance for LLM-Assisted ISR Swarms over a Verification-Aware Fabric",
+    "authors": [
+      "Nikolaos Kekatos",
+      "Stylianos Basagiannis",
+      "Panagiotis Katsaros",
+      "Alexios Lekidis",
+      "Tom Nianios"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A three-tier (platform/squad/mission) compositional runtime-verification design detects mission-level policy violations (e.g., a prohibited intelligence package split across four robots via indirect prompt injection) that remain invisible to all per-platform monitors, and it reports the exact set of contributing platforms as provenance.",
+      "An evidence-aware two-axis verdict (security \u00d7 completeness) prevents \u201csilent all-clears\u201d under contested communications by downgrading unsupported no-violation claims to explicit unknown when loss or silence is observable, yielding 0 silent false all-clears across the evaluated multi-fault campaign versus 9 for per-platform guardrails and 9 for a best-effort central monitor across four mission objectives.",
+      "Cross-agent monitoring overhead stays operationally lightweight (sub-2 ms mission-monitor evaluation up to 1000 platforms and ~3.7 ms median end-to-end verdict latency on the MQTT\u2192JetStream fabric), enabling near-real-time mission assurance without touching safety-critical low-level controllers."
+    ],
+    "one_liner": "Mission-level assurance fails when individually compliant LLM-driven agents collectively violate policy, so the decisive capability is not stricter local guardrails but evidence-aware cross-agent composition that refuses to certify \u201call clear\u201d when communications are degraded.",
+    "emoji": "\ud83d\udef0\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Clone Systems",
+      "International Hellenic University",
+      "Aristotle University of Thessaloniki",
+      "University of Thessaly"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24174v1",
+    "url": "http://arxiv.org/pdf/2607.24174v1.pdf",
+    "published": "2026-07-27T08:59:00Z",
+    "title": "Just Testing, Move Along: Evasion of LLM-based System Log Interpretation by Prompt Injection",
+    "authors": [
+      "Max Landauer",
+      "Florian Skopik",
+      "Markus Wurzenberger",
+      "Franciszek G\u00f3rski",
+      "Mateusz Krzyszto\u0144"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Generic prompt injections embedded in attacker-controllable log fields can flip LLM log-triage outputs from malicious to benign, with the best generic string achieving a 60% attack success rate (ASR) on GPT-5.2 across 15 real-attack log traces under a black-box, no-query target setting.",
+      "Attack-specific, context-enriched injections substantially increase transferability and evasion, reaching 86.7% ASR on both Qwen-3 and Llama-3.3 and 73.3% ASR on Devstral-2, and for every attack case at least one model+string combination produced a perfect benign verdict (score 7.0).",
+      "LLM explanations often contain self-incriminating cues\u2014explicitly referencing tags/notes that steer interpretation (e.g., 'omit from alerting')\u2014and these cues appear far more frequently for strong/directive injections than for weak ones, suggesting explanation-auditing as a practical detection hook even when the top-line classification is compromised."
+    ],
+    "one_liner": "Prompt-injecting just a few plausible \u201cauthorized test\u201d words into logs can reliably launder obvious IoCs into benign-looking LLM triage\u2014yet the model\u2019s own explanations often reveal the manipulation.",
+    "emoji": "\ud83e\udeb5",
+    "tag": "security",
+    "affiliations": [
+      "AIT Austrian Institute of Technology",
+      "NASK Research and Academic Computer Network"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2604.18248v4",
+    "url": "http://arxiv.org/pdf/2604.18248v4.pdf",
+    "published": "2026-04-20T13:27:05Z",
+    "title": "Beyond Pattern Matching: Seven Cross-Domain Techniques for Prompt Injection Detection",
+    "authors": [
+      "Thamilvendhan Munirathinam"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.21151v2",
+    "url": "http://arxiv.org/pdf/2607.21151v2.pdf",
+    "published": "2026-07-23T10:35:38Z",
+    "title": "V-DEAL: Diagnosing Video Safety De-Calibration as an Understanding-Refusal Coupling Failure",
+    "authors": [
+      "Zhetong Zhang",
+      "Honghao Fu",
+      "Miao Xu",
+      "Yiwei Wang",
+      "Yujun Cai"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23999v2",
+    "url": "http://arxiv.org/pdf/2607.23999v2.pdf",
+    "published": "2026-07-27T04:51:20Z",
+    "title": "ContainmentBench: Trace-Based Evaluation of Post-Injection Containment in Tool-Using LLM Agents",
+    "authors": [
+      "Wenhao Lan",
+      "Shan Li",
+      "Xinhua Lai",
+      "Meiqi Wu",
+      "Junbin Yang",
+      "Haihua Shen"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 600 matched active-tainted pairs with identical zero committed-harm outcomes, 73.5% still diverge in logged trajectories or authorized-utility, showing terminal policy labels are not sufficient to characterize post-injection containment.",
+      "A taint-only firewall preserves zero committed-harm but completes just 0.1642 of authorized tainted workflows (vs 0.8567 with an intent-ledger policy and 0.9233 with a strong tool-boundary baseline), quantifying how over-blocking can masquerade as security while destroying legitimate work.",
+      "Normalized logged-spread rankings are sensitive to evidence-stage mix and denominator choice\u2014e.g., 85.85% of the aggregate spread gap between tool-boundary and intent-ledger comes from memory/recovery, and security/active-stage ordering can reverse under a fixed-denominator normalization\u2014so propagation claims should be stage-stratified and normalization-audited."
+    ],
+    "one_liner": "Equal \u201cno-harm\u201d endpoints can hide massive differences in both how far taint propagates and how much authorized work survives, making trace-level, stage-aware reporting essential for evaluating agent containment after prompt injection.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "University of Chinese Academy of Sciences",
+      "Inner Mongolia University of Technology",
+      "Tsinghua University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": [
+      "agentic-prompt-injection-grpo"
+    ]
+  },
+  {
+    "id": "2607.24006v1",
+    "url": "http://arxiv.org/pdf/2607.24006v1.pdf",
+    "published": "2026-07-27T05:05:57Z",
+    "title": "Agentic Cloud Decoys: A Deception-Driven Framework for Autonomous Intrusion Investigation",
+    "authors": [
+      "Mohan Manivannan",
+      "Dalal Alharthi"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A decoy-triggered, session-centric LLM agent reconstructed 9/10 controlled AWS S3 intrusion scenarios end-to-end and achieved a 9.5/10 overall scenario score, indicating that deception can reliably gate autonomous investigation to high-signal activity rather than background cloud noise.",
+      "Dynamic two-stage prompt construction enforced evidence-bounded reporting in the evaluated suite, with 0/10 reports containing any factual assertion that could not be traced to an observed artifact, demonstrating a practical path to reducing hallucinated incident claims in agentic IR workflows.",
+      "The system delivered analyst-ready incident reports in ~4\u20135 minutes but failed to link delayed attacker activity across a 20-minute gap due to a 15-minute session flush window, highlighting that cross-session correlation is required to maintain campaign continuity without increasing baseline latency."
+    ],
+    "one_liner": "Deception acts as a cost-and-scope gate for LLM agents in cloud IR, but the same decoy/log pipeline introduces a sharp indirect prompt-injection risk because cloud telemetry includes attacker-authored strings.",
+    "emoji": "\ud83d\udd75\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "University of Arizona"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.28165v1",
+    "url": "http://arxiv.org/pdf/2607.28165v1.pdf",
+    "published": "2026-07-30T13:04:15Z",
+    "title": "Piggybacking on Perception: Stealthy Concurrent Audio Prompt Injections against Multimodal LLM Agents",
+    "authors": [
+      "Mingxiao Liu",
+      "Yitong Li",
+      "Haoren Zhao",
+      "Yaoxiang Bian",
+      "Jianan Ma",
+      "Jian Zhang",
+      "Jialuo Chen",
+      "Xinhao Deng",
+      "Zhen Wang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Concurrent, third-party audio prompt injections that overlap a user\u2019s live speech can hijack multimodal agents at scale, reaching 69.10% average attack success on Gemini 3 Pro and ~49.37% average ASR across 11 audio-capable agents over 8 scenarios and 10 attack patterns.",
+      "Carrier-based and robust-audibility attacks are especially dangerous in overlapped speech, with DolphinAttack averaging 81.55% ASR and multiple other methods (pulse 75.50%, foreign 72.36%, high-frequency 70.55%) indicating that improving audio perception can increase susceptibility rather than reduce it.",
+      "A perception-layer defense that separates sources and verifies cross-track consistency can outperform prompt-only mitigations, cutting ASR from 70.55%\u21922.32% for high-frequency and 81.55%\u219233.95% for DolphinAttack while achieving >90% detection success overall, but with usability risk in dense multi-speaker settings (false positives up to 35% in meeting-room noise)."
+    ],
+    "one_liner": "Always-on audio agents treat the room as input, and attackers can \u201cpiggyback\u201d instructions onto normal speech to trigger tool-using behavior unless defenses move from text filters to signal-level separation and verification.",
+    "emoji": "\ud83c\udfa7",
+    "tag": "security",
+    "affiliations": [
+      "Hangzhou Dianzi University",
+      "Ant Group",
+      "Zhejiang University",
+      "Tsinghua University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": [
+      "agentic-prompt-injection-grpo",
+      "psychosocial-harm-multimodal-multicultural"
+    ]
+  },
+  {
+    "id": "2607.25255v2",
+    "url": "http://arxiv.org/pdf/2607.25255v2.pdf",
+    "published": "2026-07-28T03:55:47Z",
+    "title": "SafeFlow: Semantic Information-Flow Control for Blocking Malicious Propagation in Multi-Agent Systems",
+    "authors": [
+      "Haowen Dai",
+      "Zonghao Ying",
+      "Wenfeng Li",
+      "Xiangfan Wu",
+      "Yisong Xiao",
+      "Tianyuan Zhang",
+      "Jiaye Lin",
+      "Lei Wei",
+      "Guangyuan Dong",
+      "Xitong Ling",
+      "Xixun Lin",
+      "Quanchen Zou",
+      "Xiangzheng Zhang"
+    ],
+    "downloaded": true,
+    "summarized": false
+  },
+  {
+    "id": "2607.21824v1",
+    "url": "http://arxiv.org/pdf/2607.21824v1.pdf",
+    "published": "2026-07-23T21:21:01Z",
+    "title": "Protocol-Level Attacks on Agentic Commerce Platforms: A Cross-Platform Taxonomy, AIP-Bench, and Unified Defense",
+    "authors": [
+      "Yedidel Louck"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23586v1",
+    "url": "http://arxiv.org/pdf/2607.23586v1.pdf",
+    "published": "2026-07-26T10:29:20Z",
+    "title": "Are You Still the Agent I Authorized? Earned Authority under a Fixed Ceiling for Evolving Agents",
+    "authors": [
+      "Zhaoxi Zhang",
+      "Xiaomei Zhang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Authorization drift in long-lived evolving agents is best controlled by fixing an immutable user-issued effect ceiling at grant time and allowing only evidence-gated movement of active authority beneath it, ensuring no runtime signal can ever increase the security boundary.",
+      "A grant must be guarded by two independent checks\u2014(1) a transition envelope that suspends the grant upon disallowed subject/context mutations and (2) a ceiling clamp that bounds all admissible actions\u2014because capability/tool-manifest tracking alone can miss authority changes caused purely by task-phase shifts.",
+      "Under complete mediation, sound effect-request abstraction (realized effects are contained in monitor-verified requested effects), attenuating delegation, and monitor integrity, any mutation sequence cannot amplify protected effects beyond the union of user-issued ceilings, meaning agent-produced evidence may allocate permissions below the ceiling but cannot raise it."
+    ],
+    "one_liner": "The key insight is separating continuity (whether an old grant still applies after mutation) from containment (what effects are possible), with a fixed ceiling that makes \u201cearned autonomy\u201d safe only as allocation\u2014not as boundary-setting.",
+    "emoji": "\ud83d\udec2",
+    "tag": "security",
+    "affiliations": [
+      "University of Technology Sydney",
+      "Griffith University"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2508.05775v3",
+    "url": "http://arxiv.org/pdf/2508.05775v3.pdf",
+    "published": "2025-08-07T18:42:16Z",
+    "title": "Guardians and Offenders: A Survey on Harmful Content Generation and Safety Mitigation of LLM",
+    "authors": [
+      "Chi Zhang",
+      "Changjia Zhu",
+      "Junjie Xiong",
+      "Xiaoran Xu",
+      "Lingyao Li",
+      "Yao Liu",
+      "Zhuo Lu"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2512.14751v2",
+    "url": "http://arxiv.org/pdf/2512.14751v2.pdf",
+    "published": "2025-12-14T07:48:44Z",
+    "title": "One Leak Away: How Pretrained Model Exposure Amplifies Jailbreak Risks in Finetuned LLMs",
+    "authors": [
+      "Yixin Tan",
+      "Zhe Yu",
+      "Rui Wen",
+      "Jun Sakuma"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26849v1",
+    "url": "http://arxiv.org/pdf/2607.26849v1.pdf",
+    "published": "2026-07-29T12:35:58Z",
+    "title": "ToxScreen: Detecting Whether an LLM Has Been Poisoned",
+    "authors": [
+      "Anthony Hughes",
+      "Nicole Xing",
+      "Collin Francel",
+      "Andy Kim",
+      "Andrew Draganov"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A benchmark of ~800 poisoned instruction-tuned LLMs (1B\u201370B) shows high-quality backdoors can achieve triggered attack-success rates as high as 97% for anti-refusal and 83\u2013100% for safety-label flipping while leaving clean-task behavior near baseline, implying trigger-gated malicious capability can be deployed with minimal obvious functional regressions.",
+      "A simple token sweep over ~24,000 candidate vocabulary tokens recovers the planted trigger wherever the backdoor is behaviorally effective (planted trigger ranked #1 in 14/28 settings and top-3 in 17/28), while gradient-based prompt-optimization methods consistently converge to generic jailbreak suffixes rather than the true trigger, indicating \u201cjailbreak-finding\u201d is not equivalent to \u201cbackdoor-trigger recovery.\u201d",
+      "Second-order weight\u2013behavior coupling (a curvature-based suppression ratio gate such as \u03c1(c)\u22640.80) filters many high-ASR decoy jailbreak tokens while retaining nearly all planted triggers, and broadly jailbreakable models (e.g., cases where random candidates already flip labels at ~97% or where non-trigger median ASR is ~53%) are themselves strong tampering/anomaly signals even when exact triggers are not recovered."
+    ],
+    "one_liner": "Backdoor trigger recovery under realistic auditing constraints looks more like systematic candidate testing plus weight-space suppression checks than like adversarial-suffix prompt optimization, and widespread jailbreakability may be a practical \u201csomething is wrong\u201d indicator on its own.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "University of Sheffield",
+      "Yale University",
+      "University of Alabama",
+      "Arcadia Impact"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": [
+      "backdoor-detection"
+    ]
+  },
+  {
+    "id": "2607.27373v1",
+    "url": "http://arxiv.org/pdf/2607.27373v1.pdf",
+    "published": "2026-07-29T18:25:30Z",
+    "title": "RoguePrompt: Dual-Layer Encoding for Self-Reconstruction to Circumvent LLM Moderation",
+    "authors": [
+      "Benyamin Tafreshian",
+      "Prathamesh Dhake"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A deterministic single-turn jailbreak that combines even/odd span splitting with nested Vigen\u00e8re\u2192ROT13 self-reconstruction achieved 93.93% Bypass@3, 79.02% Reconstruction@3, and 70.18% Execution@3 on 313 StrongREJECT prompts across three hosted LLM configurations, showing high end-to-end risk under a black-box threat model.",
+      "Separating stages exposes major safety gaps: a simple encoding baseline (Base64) reached 93.29% Reconstruction@3 but only 16.83% Execution@3, indicating that \u201cprompt accepted/decoded\u201d is a poor proxy for actual harmful compliance and that post-reconstruction refusal is a critical control point.",
+      "Ablations show the combined construction matters: removing span-splitting produced the largest Execution@3 drop (\u221274.59% relative), while failure modes for the full method were distributed across decode/parse failure (35.00%), service-level blocking (20.36%), and refusal-after-reconstruction (21.43%), implying defenses must target multiple pipeline layers rather than only input filtering."
+    ],
+    "one_liner": "Stage-wise measurement reveals that many defenses fail not at blocking encoded prompts but at reliably preventing decode\u2192reassemble\u2192execute behaviors in one-shot self-reconstruction attacks.",
+    "emoji": "\ud83e\udde9",
+    "tag": "security",
+    "affiliations": [
+      "Boston University"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24392v1",
+    "url": "http://arxiv.org/pdf/2607.24392v1.pdf",
+    "published": "2026-07-27T13:07:52Z",
+    "title": "When LLM Defenses Backfire: Characterizing Safety, Performance, and Cost Trade-offs",
+    "authors": [
+      "Tong Zhang",
+      "Zexin Li",
+      "Simin Chen",
+      "Yun Peng"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Self-Defend achieves the lowest unsafe-query acceptance across models (down to 0.0\u20131.5% on Gemma/Llama/Mistral and 0.5% on Qwen), but it can backfire with extreme over-refusal on benign-but-ambiguous prompts (e.g., 80.8% full refusal on XSTest for Mistral and 53.2% for Gemma).",
+      "Rule-based perplexity filtering (PPL) is the most capability-preserving option\u2014often matching baseline accuracy on GSM8K and MMLU-Pro\u2014yet it is one of the most over-refusal-prone defenses in real user-style data (e.g., 43\u201345% full refusal on OpenAssistant across multiple models).",
+      "Multi-round defenses impose prohibitive operational overhead, with SmoothLLM inflating output length by ~5\u20137\u00d7 and driving >400% latency/energy increases on some setups (e.g., Llama-3.1-8B output tokens 504\u21923016 and energy 3005\u219217883), making \u201csafer\u201d decoding potentially non-deployable at scale."
+    ],
+    "one_liner": "The most aggressive jailbreak blockers can simultaneously erase usefulness through refusal spikes and explode inference cost, so defense selection is fundamentally a safety\u2013utility\u2013budget optimization problem.",
+    "emoji": "\u2696\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Fudan University",
+      "University of California, Riverside",
+      "Columbia University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.27081v1",
+    "url": "http://arxiv.org/pdf/2607.27081v1.pdf",
+    "published": "2026-07-29T16:07:19Z",
+    "title": "On-Policy Distillation for LLM Safety: A Routing Approach to Template-Robust Realignment",
+    "authors": [
+      "Yongjian Guo",
+      "Wanlun Ma",
+      "Lingyu Shen",
+      "Xi Xiao",
+      "Sheng Wen"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Template mismatch is a major failure mode for existing safety-realignment methods: when the defender\u2019s prompt template doesn\u2019t match the attacker\u2019s, defense effectiveness drops by >30% and downstream task performance can collapse to near-zero (e.g., SQL exact-match 0.000 under soft-SFT in mismatched settings).",
+      "Routing-based On-Policy Distillation (ROPD) keeps harmful ASR in the single digits to low teens under the self template across three base models while preserving task utility near attacked-model levels (e.g., Llama-2 SQL ~0.596\u20130.626 with ASR ~2.1\u20132.4; Qwen2.5 SQL ~0.696 with ASR ~6.6\u201311.1; Gemma-2 SQL ~0.670\u20130.689 with ASR ~5.1\u20135.6).",
+      "Even after \u201cpassing\u201d same-template acceptance tests, all repaired models remain re-jailbreakable via system-prompt rewriting, with cross-template ASR rebounding sharply (e.g., attack=self and def=self on Llama-2 SQL: ROPD ASR 2.4% at eval=self but 19.7% at eval=raw; rollback 30.9%\u219242.3%)."
+    ],
+    "one_liner": "Safety repair that looks strong under one chat template can fail badly under another, and routing distillation from an original safety teacher plus a task teacher is a practical way to reduce (not eliminate) this template fragility.",
+    "emoji": "\ud83e\udded",
+    "tag": "security",
+    "affiliations": [
+      "EPFL",
+      "Swinburne University of Technology",
+      "Tsinghua University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2603.23171v3",
+    "url": "http://arxiv.org/pdf/2603.23171v3.pdf",
+    "published": "2026-03-24T13:13:23Z",
+    "title": "Adaptively Robust LLM Monitoring via Activation Watermarking",
+    "authors": [
+      "Toluwani Aremu",
+      "Daniil Ognev",
+      "Samuele Poppi",
+      "Nils Lukas"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2510.27275v2",
+    "url": "http://arxiv.org/pdf/2510.27275v2.pdf",
+    "published": "2025-10-31T08:35:42Z",
+    "title": "Prevalence of Security and Privacy Risk-Inducing Usage of AI-based Conversational Agents",
+    "authors": [
+      "Kathrin Grosse",
+      "Nico Ebert"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.25375v1",
+    "url": "http://arxiv.org/pdf/2607.25375v1.pdf",
+    "published": "2026-07-28T07:30:12Z",
+    "title": "Inspect India Evals: An Open Benchmarking Framework for Evaluating Large Language Models in the Indian Linguistic and Cultural Context",
+    "authors": [
+      "Abhishek Kumar Singh",
+      "Shrey Nag",
+      "Sachita",
+      "Lipi Goel",
+      "Rajeshwar Singh Janwar"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across five open-weight LLMs, the composite India Fairness Index ranged from 51.6% to 83.1%, with Gemma 2 27B leading (83.1%) and Sarvam\u2011M 24B second (76.6%), showing that India-facing safety/fairness readiness varies sharply even among strong general models.",
+      "All evaluated models achieved 100% refusal on the Multilingual Safety set (harmful prompts translated into Indian languages), yet DPI Safety compliance spanned 20% to 100%, indicating that generic \u201charmful content\u201d refusal does not reliably transfer to high-stakes India-specific Digital Public Infrastructure fraud and misuse scenarios.",
+      "Reasoning-focused DeepSeek\u2011R1 14B topped Multilingual MMLU factual accuracy (80.6%) but was worst on DPI Safety (20%) and weakest on jailbreak resistance (40%), while Sarvam\u2011M 24B led Indian Cultural Knowledge (60%), highlighting a deployment trade-off where test-time reasoning gains can coincide with weaker governance-aligned refusals and local-domain safety."
+    ],
+    "one_liner": "A single benchmark suite exposes that Indian-language safety can look perfect (100% refusal) while India-specific DPI misuse defenses still fail badly (down to 20%), making \u201coverall safety\u201d claims unreliable without domain-grounded evals.",
+    "emoji": "\ud83c\uddee\ud83c\uddf3",
+    "tag": "security",
+    "affiliations": [
+      "GTBIT",
+      "TIET",
+      "IGDTUW",
+      "MeitY",
+      "Ministry of Electronics and Information Technology (MeitY), Government of India"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": [
+      "psychosocial-harm-multimodal-multicultural"
+    ]
+  },
+  {
+    "id": "2607.21951v1",
+    "url": "http://arxiv.org/pdf/2607.21951v1.pdf",
+    "published": "2026-07-24T03:55:51Z",
+    "title": "SIREN (Luring LLMs onto the Rocks): PAIR-Driven Preference Manipulation in Web-RAG Recommenders",
+    "authors": [
+      "Evan Caville",
+      "Siamak Layeghy",
+      "Billy Sung",
+      "Sara Dolnicar",
+      "Marius Portmann"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22716v1",
+    "url": "http://arxiv.org/pdf/2607.22716v1.pdf",
+    "published": "2026-07-21T15:52:30Z",
+    "title": "Visual Token Compression Enhances Robustness of MLLMs",
+    "authors": [
+      "Shishen Gu",
+      "Jiequan Cui",
+      "Wenbo Hu",
+      "Zenglin Shi",
+      "Zhenzhen Hu",
+      "Richang Hong"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.21619v1",
+    "url": "http://arxiv.org/pdf/2607.21619v1.pdf",
+    "published": "2026-06-01T09:47:17Z",
+    "title": "Adversarial Style Optimization: Enhancing VLM Jailbreaks by GRPO-based Stylistic Triggers Optimization",
+    "authors": [
+      "Bingjun Luo",
+      "Jialin Guo",
+      "Yue Yao",
+      "Xinpeng Ding"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23496v1",
+    "url": "http://arxiv.org/pdf/2607.23496v1.pdf",
+    "published": "2026-07-26T06:54:28Z",
+    "title": "Do LLMs Know Their Vulnerable Scenarios?",
+    "authors": [
+      "Ziheng Peng",
+      "Huiqi Deng",
+      "Haoran Jing",
+      "Xuankun Rong",
+      "Jiahui Han",
+      "Xiting Wang",
+      "Na Zou",
+      "Xia Hu"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Scenario-wrapped jailbreak prompts activate internal \u201cscenario directions\u201d that causally suppress an independently learned refusal representation, and directly steering along these scenario directions reproduces the same refusal-score drop as the natural-language wrapper.",
+      "A sparse-autoencoder concept screen plus causal steering can surface a thin tail (~0.1%) of refusal-suppressing concepts whose translated natural-language scenarios act as reusable attack priors, boosting average jailbreak attack success by up to 18.2 percentage points across 3 open-source models, 2 benchmarks, and 6 black-box jailbreak methods.",
+      "Vulnerability scenarios mined from open-source models transfer to closed models (GPT-5, Claude-Haiku-4.5, Gemini-3-Flash), and interaction attribution identifies synergistic scenario combinations that outperform single-scenario and additive baselines while enabling iterative attacks to succeed in fewer turns."
+    ],
+    "one_liner": "Internal concept directions can be used as a practical search signal to discover and compose jailbreak scenarios that generalize across model families.",
+    "emoji": "\ud83e\udded",
+    "tag": "security",
+    "affiliations": [
+      "Renmin University of China",
+      "Xi\u2019an Jiaotong University",
+      "University of Science and Technology of China",
+      "Wuhan University",
+      "Shanghai Artificial Intelligence Laboratory"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2603.15684v2",
+    "url": "http://arxiv.org/pdf/2603.15684v2.pdf",
+    "published": "2026-03-15T12:13:01Z",
+    "title": "State-Dependent Safety Failures in Multi-Turn Language Model Interaction",
+    "authors": [
+      "Pengcheng Li",
+      "Jie Zhang",
+      "Tianwei Zhang",
+      "Han Qiu",
+      "Zhang kejun",
+      "Weiming Zhang",
+      "Nenghai Yu",
+      "Wenbo Zhou"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26574v1",
+    "url": "http://arxiv.org/pdf/2607.26574v1.pdf",
+    "published": "2026-07-29T07:53:35Z",
+    "title": "Recover, Decode, Reguard: Guard-Agnostic Defense Amplification againstEncoded VLM Jailbreaks",
+    "authors": [
+      "Haoyu Zhang",
+      "Zhuoxi Wang",
+      "Shibo Zheng",
+      "Zijian Xiao",
+      "Xiangchen Guan",
+      "Mohammad Zandsalimy",
+      "Shanu Sushmita"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Under a deployment-relevant best-of-suite metric over 11 representation-shifting attacks, encoded jailbreaks break 89\u201391% of harmful behaviors with no defense and still 63\u201365% even with the strongest guard plus recover-and-decode, exposing a large decode gap that surface-form guards do not close.",
+      "Reporting per-attack mean ASR (commonly used) can understate attacker success by ~3.5\u00d7 (observed 3.2\u00d7\u20136.6\u00d7) because different encodings break different behaviors, so evaluations that omit OR-over-attacks substantially overestimate jailbreak defense effectiveness.",
+      "A reguard layer (guarding both decoded payload and pre-decode recovered text) reduces ensemble ASR across all guard\u2013target pairs (e.g., 79%\u219248% for one guard) but pushes benign over-refusal to 81\u201392% for well-calibrated guards, indicating a persistent safety\u2013utility frontier where no tested configuration achieves both low ASR and low over-refusal."
+    ],
+    "one_liner": "An AutoAttack-style, best-of-suite evaluation reveals recovery-based VLM defenses trade safety for massive over-refusal, rather than delivering monotonic robustness gains.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.27910v1",
+    "url": "http://arxiv.org/pdf/2607.27910v1.pdf",
+    "published": "2026-07-30T09:24:27Z",
+    "title": "A Cross-Architecture Audit of Direction-Based Inference-Time Defences in Vision-Language Models",
+    "authors": [
+      "Xiangyu Yin",
+      "Tora Bodin",
+      "Rohan Menon",
+      "Chih-Hong Cheng"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Direction-based inference-time defenses for VLM jailbreaks are strongly architecture-conditional\u2014no single direction Pareto-dominates across 15 (model,layer) cells, with the image-conditioning shift leading on LLaVA-1.5 and Pixtral-12B, a prompt-level \u201cignore the image\u201d instruction leading on Qwen2.5-VL, and an attack-specific residual leading on Qwen2-VL-2B.",
+      "Under a magnitude-controlled protocol with matched-norm random controls, subtracting the mean image-conditioning shift is direction-specific on 13/15 cells (random control fails on every cell), demonstrating that refusal recovery is not explained by generic large perturbations but by a particular geometric direction.",
+      "Text-only and multimodal refusal geometries partially overlap: the CMRM-style text-only refusal direction has positive cosine alignment with the multimodal image-conditioning shift on all 15/15 cells (mean cosine 0.35, range 0.17\u20130.65; sign test p\u22483\u00d710\u22125; 15\u201325\u00d7 random-null), implying shared underlying structure rather than independent \u201crefusal axes.\u201d"
+    ],
+    "one_liner": "A single-layer residual-stream subtraction can robustly recover refusals, but the \u201cright\u201d direction is not universal and must be calibrated per VLM decoder family (even dimension-matched models yield nearly orthogonal, non-transferable directions).",
+    "emoji": "\ud83e\udded",
+    "tag": "security",
+    "affiliations": [
+      "Chalmers University of Technology",
+      "Carl von Ossietzky University of Oldenburg"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2604.24162v2",
+    "url": "http://arxiv.org/pdf/2604.24162v2.pdf",
+    "published": "2026-04-27T08:18:30Z",
+    "title": "Defusing the Trigger: Tail-Risk-Informed Attention Rebalancing for LLM Backdoor Mitigation",
+    "authors": [
+      "Kaisheng Fan",
+      "Yishu Gao",
+      "Xunzhu Tang",
+      "Tegawend\u00e9 F. Bissyand\u00e9",
+      "Weizhe Zhang"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.27389v1",
+    "url": "http://arxiv.org/pdf/2607.27389v1.pdf",
+    "published": "2026-07-29T18:52:44Z",
+    "title": "FunL2O: LLM-Guided Feature Function Design for Learning to Optimize",
+    "authors": [
+      "Bingheng Li",
+      "Junyang Cai",
+      "Yupeng Zhang",
+      "Bistra Dilkina",
+      "Jayant Kalagnanam",
+      "Dzung T. Phan"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "LLM-guided program evolution of executable feature functions improves downstream learning-to-optimize performance across continuous and mixed-integer pipelines, including up to 49.4% lower LP objective gap (set cover: 0.01207\u21920.00611) and a 26.2% reduction in simplex pivot-count geometric mean (1162.86\u2192857.78) without changing model architectures or solvers.",
+      "For constrained prediction, evolved representations sharply reduce optimality gaps on hard cone-constrained problems while boosting feasibility, including a drop in nonconvex SOCP gap from 933.85% to 141.28% (84.9% improvement) alongside feasibility rising from 0.25 to 1.00 under a 1e-4 violation threshold.",
+      "For MILP search, evolved variable features materially improve solver outcomes, cutting Predict-and-Search final primal gap from 0.699% to 0.095% on MIS and improving learned backdoor branching to 46.0s mean wall time on MIS (102.6s default vs 59.1s handcrafted) with win rate rising to 49%, indicating feature design can dominate solver-facing gains even when local accuracy shifts are small."
+    ],
+    "one_liner": "Automating feature-function design via LLM-proposed, evaluator-scored executable programs yields consistent end-to-end optimization gains and deploys as plain deterministic preprocessing code with no LLM needed at inference.",
+    "emoji": "\ud83e\uddec",
+    "tag": "general",
+    "affiliations": [
+      "Michigan State University",
+      "University of Southern California",
+      "University of Wisconsin\u2013Madison",
+      "IBM Research"
+    ],
+    "interest_score": 7,
+    "relevant": false
+  },
+  {
+    "id": "2607.25619v1",
+    "url": "http://arxiv.org/pdf/2607.25619v1.pdf",
+    "published": "2026-07-28T11:50:19Z",
+    "title": "SkillGate: Cost Efficient Runtime Malicious Skill File Detection in Coding Agents",
+    "authors": [
+      "Rui Yang",
+      "Michael Fu",
+      "Kla Tantithamthavorn",
+      "Chetan Arora",
+      "Joey Chua"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A hybrid regex-prefilter plus snippet-only LLM judge detects malicious coding-agent skill files with F1=0.817 and AUPRC=0.830 on a 1,650-file benchmark (9.1% malicious), beating prior scanners by 5\u20136\u00d7 in threshold-independent AUPRC (0.830 vs 0.144/0.162).",
+      "Cost control comes primarily from gating and snippet extraction: 67.2% of files bypass the LLM entirely and the overall design cuts LLM input tokens by 76.9% (4.3\u00d7) versus full-file judging while preserving deployable recall (R=0.769).",
+      "Inline deployment is practical at install time: weighted average screening latency is ~818ms per skill (139ms for prefilter-safe, 2,208ms when LLM-bound), ~7.7\u00d7 faster than escalating every file to an LLM (~6,281ms), with a low false-positive rate of 1.13% (\u224817/1,500 benign) compared to 17.4\u201350.4% for static-only baselines."
+    ],
+    "one_liner": "Targeted snippet-level adjudication turns LLM-based skill-package screening into a low-latency, low-token, low-FPR supply-chain control for MCP/coding-agent ecosystems.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Monash University",
+      "Transurban",
+      "The University of Melbourne"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.27940v1",
+    "url": "http://arxiv.org/pdf/2607.27940v1.pdf",
+    "published": "2026-07-30T09:49:13Z",
+    "title": "TriShield: Zero-Utility-Loss Defense Against Privacy Backdoors in Federated Language Model Fine-Tuning via Orthogonal Gradient Projection and Optimizer State Entanglement",
+    "authors": [
+      "Cheng Wei"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A three-layer client-side defense (artifact detection + optimizer-state entanglement + SVD-based task-subspace projection) drives NeuroImprint-style sample reconstruction from 59\u201379% down to 0% on GPT-2 (117M) and Llama-Guard-3-1B without adding communication rounds.",
+      "Utility is preserved within a tight bound (reported \u22640.3% downstream accuracy drop vs. vanilla FedAvg) while adding <5% GPU overhead per round, positioning deterministic projection as a viable alternative to LDP that commonly costs 5\u201320% accuracy at practical \u03b5<1.",
+      "The key privacy mechanism is eliminating task-orthogonal \u201cmemorization\u201d gradient components\u2014after state entanglement and projection, the uploaded update contains provably zero mutual information about any single training sample, forcing analytic inversion to collapse to an undefined 0/0 signal."
+    ],
+    "one_liner": "It combines optimizer-state entanglement with task-subspace gradient projection to stop a malicious FL server from planting PEFT privacy backdoors while keeping model utility essentially unchanged.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Honor Device Co., Ltd."
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2606.30555v3",
+    "url": "http://arxiv.org/pdf/2606.30555v3.pdf",
+    "published": "2026-06-29T16:51:06Z",
+    "title": "Linguistic Firewall: Geometry as Defense in Multi-Agent Systems Routing",
+    "authors": [
+      "Dvir Alsheich",
+      "Adar Peleg",
+      "Ben Hagag",
+      "Rom Himelstein",
+      "Amit Levi",
+      "Avi Mendelson"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.25227v1",
+    "url": "http://arxiv.org/pdf/2607.25227v1.pdf",
+    "published": "2026-07-28T02:59:32Z",
+    "title": "Decision-Level Hijacking: Injecting Cognitive Bias into Large Language Models via Bit-Flip Attacks",
+    "authors": [
+      "Yu Yan",
+      "Jiahao Chen",
+      "Siqi Lu",
+      "Yongjuan Wang",
+      "Ziming Zhao",
+      "Zhaoxuan Li",
+      "Tianyu Du",
+      "Qingjun Yuan",
+      "Shouling Ji"
+    ],
+    "downloaded": true,
+    "summarized": false
+  },
+  {
+    "id": "2607.28478v1",
+    "url": "http://arxiv.org/pdf/2607.28478v1.pdf",
+    "published": "2026-07-30T16:30:08Z",
+    "title": "Would You Walk to the Car Wash? Revealing the Salience Bias of Large Language Models in Commonsense Reasoning",
+    "authors": [
+      "Zheng Wu",
+      "Chenhao Xue",
+      "Shijie Zheng",
+      "Yijie Lu",
+      "Cheng Yang",
+      "Zhuosheng Zhang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 12 frontier LLMs on the 1,145-item SaliTrap benchmark, even the best model achieves only 54.8% Trap Avoidance Rate (TAR) while 8/12 models fall below 30%, showing that computation-laden distractors systematically override basic physical commonsense.",
+      "Salience bias intensifies monotonically with numerical distractor density\u2014each added number lowers TAR and raises \u201cCoT-Hijacked\u201d behavior\u2014indicating that real-world verbose prompts (budgets, routes, timing) are a practical attack surface for elicitation failures.",
+      "Most \u201csycophantic compliance\u201d is knowledge suppression rather than knowledge absence: a context-free probe of the same trap statements recovers over 90% of these failures, and lightweight inference-time prompting can boost TAR by ~18\u201331 points on weaker models (e.g., GLM-5.1 +31.4, DeepSeek-V4-Pro +29.2) without retraining."
+    ],
+    "one_liner": "LLMs often know the commonsense constraint but still get lured into doing pointless math when the prompt is packed with salient numbers\u2014making elicitation, not competence, the bottleneck.",
+    "emoji": "\ud83e\udde0",
+    "tag": "security",
+    "affiliations": [
+      "Shanghai Jiao Tong University",
+      "ByteDance Inc"
+    ],
+    "interest_score": 7,
+    "relevant": false
+  },
+  {
+    "id": "2605.17480v3",
+    "url": "http://arxiv.org/pdf/2605.17480v3.pdf",
+    "published": "2026-05-17T14:42:44Z",
+    "title": "The Capability Paradox: How Smarter Auditors Make Multi-Agent Systems Less Secure",
+    "authors": [
+      "Qiqi Liu",
+      "Runhan Song",
+      "Shilin Ye"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.24964v1",
+    "url": "http://arxiv.org/pdf/2607.24964v1.pdf",
+    "published": "2026-07-27T18:13:28Z",
+    "title": "ALIBI: Adaptive Agentic Attacks on LLM-Based Vulnerability Detectors via Adversarial Code Comments",
+    "authors": [
+      "Zixuan Wu",
+      "Cristina Nita-Rotaru"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Adaptive black-box adversarial comments (ALIBI) flipped LLM vulnerability-detector verdicts from VULNERABLE\u2192BENIGN on >90% of 125 real-world CWE-476 instances across four detectors, including 100% (105/105) evasion on a multi-agent system.",
+      "Evasion is driven by a consistent \u201ccomment trust\u201d failure mode where detectors treat plausible but unverifiable claims (e.g., caller invariants or fabricated tool outputs) as stronger evidence than the observable code, with reasoning-style comments and fake external authority achieving the highest success (e.g., COT 81.1% ASR; several tool/provenance styles \u226570% ASR).",
+      "Prompt-only countermeasures were largely ineffective against adaptive attackers (end-to-end ASR still ~92\u2013100% on three detectors), while architectural separation and especially pre-detector comment sanitization sharply reduced successful evasions to <3% across all systems (0.4\u20132.8%)."
+    ],
+    "one_liner": "Non-executable code comments can reliably defeat state-of-the-art LLM vulnerability detectors by hijacking how much they \u201cbelieve\u201d unverified natural-language claims versus program evidence.",
+    "emoji": "\ud83e\uddf7",
+    "tag": "security",
+    "affiliations": [
+      "Northeastern University"
+    ],
+    "interest_score": 9,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.22184v1",
+    "url": "http://arxiv.org/pdf/2607.22184v1.pdf",
+    "published": "2026-07-24T10:51:26Z",
+    "title": "DeFiScreener: Efficient DeFi Attack Pre-screening in Smart Contracts via Historical Case Matching",
+    "authors": [
+      "Rui Cao",
+      "Shaojing Fan",
+      "Zhimei Sui",
+      "Liming Fang",
+      "Ziqi Yang",
+      "Yingying Jiao",
+      "Zhenguang Liu"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.27528v1",
+    "url": "http://arxiv.org/pdf/2607.27528v1.pdf",
+    "published": "2026-07-29T23:46:23Z",
+    "title": "ThreatForest: Multi-Agent Attack Tree Generation with Pluggable TTP Framework Mapping",
+    "authors": [
+      "Cristian Leo",
+      "Anton Dykyi",
+      "Danny Cortegaca",
+      "Daniel Begimher",
+      "Prakash Jha"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A 10-stage multi-agent pipeline can turn a source-code repository into structured, TTP-mapped attack trees with mitigations, producing on average 12 threats and ~240 attack steps per application across seven cloud domains with near-complete ATT&CK tactic coverage (0.98 overall; full coverage in 5/7 domains).",
+      "End-to-end quality is solid for threat statements, attack trees, and mitigations (panel scores 0.63\u20130.68 on a 0\u20131 rubric), but embedding-only ATT&CK technique mapping is the dominant constraint at just 0.29 defensible matches, making technique attribution the key blocker to trustworthy standard-framework linkage.",
+      "A monolithic single-call baseline on the same model more than doubles TTP-mapping defensibility (0.63 vs 0.29) while the multi-agent design wins on breadth and uniformity (\u2248240 vs 87 attack steps; tactic coverage 0.98 vs 0.85), implying the main improvement lever is replacing/augmenting the embedding retriever (e.g., reranking/fine-tuning) rather than changing the agent decomposition."
+    ],
+    "one_liner": "The most surprising result is that the multi-agent architecture improves coverage and structure, yet the weakest link is a single replaceable component\u2014embedding-based TTP mapping\u2014which underperforms even a single-call model\u2019s direct technique selection.",
+    "emoji": "\ud83c\udf32",
+    "tag": "cyber",
+    "affiliations": [
+      "Amazon Web Services, Inc.",
+      "Amazon Web Services EMEA SARL, UK Branch"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.25936v1",
+    "url": "http://arxiv.org/pdf/2607.25936v1.pdf",
+    "published": "2026-07-28T16:20:01Z",
+    "title": "From Role Prompt to Infinite Thinking: Exploiting Persona Conditioning for Inference Cost Attacks in LLMs",
+    "authors": [
+      "Zhiyi Mou",
+      "Wangze Ni",
+      "Tianfang Xiao",
+      "Haoyang LI",
+      "Chen Jason Zhang",
+      "Hanzhi Ma",
+      "Yang Bai",
+      "Zhibo Wang",
+      "Kui Ren"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A single natural persona instruction (e.g., \u201cact as a novice student\u201d) can inflate per-request latency by 47.3\u00d7 (3s\u2192141.87s) and tokens by orders of magnitude, demonstrating persona consistency as a practical inference-cost DoS primitive.",
+      "The proposed task-aware dynamic persona construction achieves up to 7.64\u00d7 average generated-token amplification across models (e.g., Gemini-3.5-Flash) and up to 207.64\u00d7 worst-case amplification on DeepSeek-V4-Pro, exceeding prior explicit extension and suffix-based baselines in both typical and extreme settings.",
+      "Task-adaptive personas materially drive the attack strength: dynamic personas raise generated tokens by 13.18\u00d7 versus 4.29\u00d7 for a fixed static persona, while maintaining low input perplexity (9.60, best among compared methods) and higher output entropy/surprisal, indicating stealthier, semantically coherent cost blowups rather than obvious looping."
+    ],
+    "one_liner": "Persona conditioning\u2014normally a UX feature\u2014creates a stealthy, black-box inference-cost attack surface that can push token usage beyond 200\u00d7 without unnatural suffixes or explicit \u201cthink longer\u201d prompts.",
+    "emoji": "\ud83c\udfad",
+    "tag": "security",
+    "affiliations": [
+      "Zhejiang University",
+      "Sun Yat-sen University",
+      "Hong Kong Polytechnic University",
+      "Chengdu University of Information Technology"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24893v1",
+    "url": "http://arxiv.org/pdf/2607.24893v1.pdf",
+    "published": "2026-07-27T15:18:06Z",
+    "title": "Early Detection of Distributed Backdoors in Multi-Agent LLM Systems: A Characterization Study",
+    "authors": [
+      "Diego Fernandez Arias",
+      "Dev Prashant Mistry",
+      "Ren Wang",
+      "Yibo Hu"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Prefix-level monitoring cannot flag distributed backdoors before the first fragment injection (0% pre-injection detections), but once injection starts a lightweight prefix classifier catches 99.3% of successful attacks with a median of 5 steps remaining before the run ends (10.3% false-positive rate on safe runs), enabling abort-before-assembly in nearly all cases.",
+      "Generic behavioral/zero-shot safety monitors transfer poorly to covert distributed payloads\u2014zero-shot LLM judges achieve near-zero utility (e.g., F1=0.019 for qwen2.5:7b) and a behavior-trained guardrail over-fires (91.8% of runs flagged; 25.9% accuracy), because agents behave normally while the payload accumulates.",
+      "Most early warning signal is driven by removable surface cues (ciphertext length/entropy): removing length features collapses a simple feature detector (F1 drops from ~0.71 to 0.12) and cross-domain transfer can fail catastrophically (api\u2192db F1=0.000), while a fine-tuned small LLM partially restores robustness under domain shift (api\u2192db F1=0.531)."
+    ],
+    "one_liner": "Detection is a race against post-run assembly: you can stop almost every successful distributed backdoor if you alarm quickly after the first fragment, but today\u2019s strongest signals mostly come from brittle payload \u201cenvelope\u201d artifacts like length and entropy.",
+    "emoji": "\ud83d\udd75\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Illinois Institute of Technology"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.26998v1",
+    "url": "http://arxiv.org/pdf/2607.26998v1.pdf",
+    "published": "2026-07-29T14:56:31Z",
+    "title": "AgentSnare: Learning to Delay, Divert, and Defuse Autonomous Penetration Agents",
+    "authors": [
+      "Ruoyu Wang",
+      "Heng Zhao",
+      "Renjie Wu",
+      "Mengnan Zhao",
+      "Zhixuan Chu",
+      "Wanyu Lin",
+      "Tianhang Zheng"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Trajectory-adaptive deception sustained long-horizon control over autonomous pentest agents, absorbing 46.8% of all tool calls in the decoy (Delay) and keeping 55.9% of post-entry actions there (PER), indicating dynamic, stateful decoys can outperform pre-planted lures in multi-step attacks.",
+      "Completion behavior was largely neutralized by evidence steering, with 90.0% of 638 valid completion attempts grounded in decoy provenance (SubDefuse), showing that controlling the agent\u2019s \u201cbelief state\u201d can be as important as blocking individual exploits.",
+      "End-to-end impact was decisive: across 45 attacker\u2013CVE pairs on CVE-Bench at pass@3, verified real-target exploitation dropped to 0/45 (vs. 18/45 under static defenses and 10\u201312/45 under prior honeypots), suggesting trajectory-level deception can fully suppress successful exploitation under realistic budgets."
+    ],
+    "one_liner": "A globally consistent, incrementally unfolded decoy can trap LLM pentest agents for entire attack runs\u2014turning their own tool-use loop into a controllable surface.",
+    "emoji": "\ud83e\udea4",
+    "tag": "cyber",
+    "affiliations": [
+      "The University of Hong Kong",
+      "Zhejiang University",
+      "Hainan University",
+      "Anhui University",
+      "The Hong Kong Polytechnic University",
+      "The State Key Laboratory of Blockchain and Data Security, Zhejiang University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.18538v2",
+    "url": "http://arxiv.org/pdf/2607.18538v2.pdf",
+    "published": "2026-07-20T22:09:40Z",
+    "title": "CryptanalysisBench: Can LLMs do Cryptanalysis?",
+    "authors": [
+      "Lukas Fluri",
+      "Avital Shafran",
+      "Nicholas Carlini",
+      "Matthew Jagielski",
+      "Milad Nasr",
+      "Orr Dunkelman",
+      "Eyal Ronen",
+      "Florian Tram\u00e8r"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23444v1",
+    "url": "http://arxiv.org/pdf/2607.23444v1.pdf",
+    "published": "2026-07-26T03:51:20Z",
+    "title": "Isolated but Exposed: Persistence-Based Memory Extraction Attack on LLM Agents",
+    "authors": [
+      "Xinyu Gao",
+      "Wenyu Chen",
+      "Xiangtao Meng",
+      "Li Wang",
+      "Chuanchao Zang",
+      "Jianing Wang",
+      "Zheng Li",
+      "Shanqing Guo"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Even with strict per-user long-term memory isolation, agents can leak private LTM records through tool-call parameters, enabling a malicious tool to exfiltrate data without ever crossing user-level access controls.",
+      "A persistence-based tool-side attack (SPORE) reaches 80.0% record extraction with frequent triggering and still extracts 47.0% of LTM using only 20 legitimate user tool invocations, showing that platform tool-call limits reduce but do not prevent high-throughput leakage.",
+      "In multi-user deployments, OAuth 2.1 identity claims allow attackers to associate extracted memories with specific users, turning bulk memory scraping into identity-linked profiling suitable for targeted surveillance and personalized attacks."
+    ],
+    "one_liner": "Tool interfaces\u2014not shared memory\u2014are the key privacy break: a single compromised tool can persistently steer an agent to leak isolated long-term memories and even tie them to user identities via OAuth.",
+    "emoji": "\ud83e\udde0",
+    "tag": "security",
+    "affiliations": [
+      "Shandong University",
+      "State Key Laboratory of Cryptography and Digital Economy Security, Shandong University",
+      "Shandong Key Laboratory of Artificial Intelligence Security, Shandong University"
+    ],
+    "interest_score": 9,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2605.29524v2",
+    "url": "http://arxiv.org/pdf/2605.29524v2.pdf",
+    "published": "2026-05-28T07:40:24Z",
+    "title": "KBF: Knowledge Boundary as Fingerprint for Language Model and Black-Box API Auditing",
+    "authors": [
+      "Yijia Fang",
+      "Yiqing Feng",
+      "Bingyu Li",
+      "Mingxun Zhou"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.27080v1",
+    "url": "http://arxiv.org/pdf/2607.27080v1.pdf",
+    "published": "2026-07-29T16:06:54Z",
+    "title": "MemSecBench: Tracking Agent Memory Poisoning from Persistence to Consequence and Repair",
+    "authors": [
+      "Xuanze Chen",
+      "Xukang Xie",
+      "Wentao Fu",
+      "Jiajun Zhou",
+      "Shanqing Yu",
+      "Qi Xuan"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 24 agent\u2013memory\u2013LLM configurations and 310 lifecycle cases, malicious instructions persisted in long-term memory in 84.2% of cases and produced a fully externalized harmful outcome in 50.3%, indicating that current agent memory stacks often turn single-session exposure into cross-session compromise.",
+      "The largest drop in the attack chain occurs at the adoption step (E2), where success falls from 76.1% recall exposure to 53.7% adoption, implying that defenses that specifically prevent recalled memory from becoming decision policy are likely higher leverage than retrieval-only filtering.",
+      "Selective repair remains unreliable: while 86.3% of poisoned cases can remove or neutralize the malicious memory (F1), only 56.1% achieve repair without losing required benign memories (SRSR), showing that \u201cdelete the bad entry\u201d approaches frequently cause collateral memory damage that undermines safe recovery."
+    ],
+    "one_liner": "Interesting because it evaluates agent memory poisoning as an end-to-end lifecycle problem\u2014persistence, delayed consequence, and selective repair\u2014revealing that backend choice can swing attack success and recovery quality by double-digit percentage points without a universal \u201csafest\u201d option.",
+    "emoji": "\ud83e\udde0",
+    "tag": "security",
+    "affiliations": [
+      "Institute of Cyberspace Security, Zhejiang University of Technology",
+      "Binjiang Institute of Artificial Intelligence, ZJUT",
+      "College of Information Engineering, Zhejiang University of Technology"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": [
+      "agentic-prompt-injection-grpo"
+    ]
+  },
+  {
+    "id": "2607.25987v2",
+    "url": "http://arxiv.org/pdf/2607.25987v2.pdf",
+    "published": "2026-07-28T17:06:13Z",
+    "title": "IH-Benchmark: A Conflict-Centered Benchmark for Instruction-Hierarchy Robustness in LLM Applications",
+    "authors": [
+      "Conor McCauley",
+      "Zeliang Kan",
+      "Jason Martin"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 37 evaluated LLM variants, instruction-hierarchy conflict compliance spans 98.2% to 20.5%, indicating that robust privilege separation across message/tool channels is still not a default capability even for widely deployed models.",
+      "Strong direct SYSTEM\u227bUSER compliance is a weak predictor of resilience to tool-output injection (USER\u227bTOOL), with some models scoring ~97% on S\u227bU yet dropping to ~66% on U\u227bT, implying that agentic deployments require dedicated tool-surface evaluation rather than relying on classic prompt-hierarchy tests.",
+      "Tool-output attacks that induce subtle presentation or factual drift are disproportionately effective (hardest U\u227bT families near ~50%: content-lie 50.1% and format-disclaimer 50.4%) compared to overtly dangerous actions that models often resist (e.g., close 97.2%, purchase 88.1%), suggesting real-world risk concentrates in \u201cquiet\u201d integrity degradation rather than obvious policy violations."
+    ],
+    "one_liner": "Privilege separation in LLM apps breaks most often at the tool boundary, and the failures that slip through are frequently subtle integrity attacks (minor distortions and injected framing) rather than overtly malicious actions.",
+    "emoji": "\ud83e\uddf1",
+    "tag": "security",
+    "affiliations": [
+      "HiddenLayer, Inc."
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": [
+      "agentic-prompt-injection-grpo"
+    ]
+  },
+  {
+    "id": "2607.27030v1",
+    "url": "http://arxiv.org/pdf/2607.27030v1.pdf",
+    "published": "2026-07-29T15:25:07Z",
+    "title": "HoF-Bench: Rediscovering Real AI-Discovered CVEs Without Frontier Models",
+    "authors": [
+      "Petr Simecek",
+      "Elnaz Babayeva",
+      "Jiri Balhar",
+      "Michal Bida",
+      "Michal Buran",
+      "Vaclav Cadek",
+      "Luigino Camastra",
+      "Tomas Dulka",
+      "Michal Janocko",
+      "Tomas Klohna",
+      "Pavel Kohout",
+      "Ondrej Kokes",
+      "Adam Krivka",
+      "Jakub Kubik",
+      "Patrik Mada",
+      "Igor Morgenstern",
+      "Marek Pavelka",
+      "Joshua Rogers",
+      "Petr Stastny",
+      "Jan Tattermusch",
+      "Dmitrijs Trizna",
+      "Martin Votruba",
+      "Guido Vranken",
+      "Jakub Zikl",
+      "Evelina Gabasova",
+      "Stanislav Fort"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A deliberately minimal LLM-based scanner, given a target-file oracle but no CVE metadata, strictly rediscovered up to 65 of 95 real AI-discovered CVEs (68%), while no frontier model was used for detection anywhere in the evaluation.",
+      "Reliability is the dominant lever: moving from one pass to four repeated passes increased rediscovery by roughly 12\u201320 CVEs per model, and 62% of successes appeared in only 1\u20133 of 4 identical runs\u2014meaning single-run scores materially understate capability.",
+      "Difficulty is strongly language-structured: JavaScript CVEs were nearly fully recoverable (best model 24/24; none missed by all with context), PHP was moderate (24/26 found by any model), and C infrastructure code was the primary failure mode (only 36/45 found by any model; 9/11 universal misses were in C)."
+    ],
+    "one_liner": "HoF-Bench shows that rediscovering real, disclosed CVEs is often a systems-and-repeatability problem\u2014cheap models plus repeated runs and portfolio diversity can match or beat single stronger runs, but large C codebases remain the hard frontier.",
+    "emoji": "\ud83e\uddea",
+    "tag": "cyber",
+    "affiliations": [
+      "AISLE",
+      "Central European Institute of Technology",
+      "Masaryk University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.26791v1",
+    "url": "http://arxiv.org/pdf/2607.26791v1.pdf",
+    "published": "2026-07-29T11:32:23Z",
+    "title": "SecRespond: Benchmarking AI Agents for Real-World Post-Compromise Incident Response",
+    "authors": [
+      "Lehan Wang",
+      "Boli Chen",
+      "Ruixue Ding",
+      "Pengjun Xie",
+      "Jinwei Huang",
+      "Zhendong Liu",
+      "Shuo Wang",
+      "Tao Lei",
+      "Xin Ouyang",
+      "Xiaomeng Li"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "SECRESPOND introduces the first post-compromise incident-response benchmark grounded in real forensic disk snapshots and security-product outputs, spanning 10 cloud-host cyber ranges across 4 entry vectors, 5 operating systems, and 21 MITRE ATT&CK techniques with 280 rubric checkpoints mapped to 52 capability items.",
+      "Across 23 frontier models, detection consistently outperforms remediation planning (e.g., GPT-5.5: 70.7% detection vs 36.0% planning; a 34.7-point gap), and no model achieved complete detection plus remediation on any single range\u2014indicating current agents can react to alerts but fail at end-to-end incident closure.",
+      "Capability breakdown shows strong entity finding but weak persistence and process quality (avg detection: 75.4% intrusion entities vs 58.8% persistence; avg planning peaks at 55.3% baseline risks but drops to 31.8% investigation/response quality), implying the dominant failures are proactive hunting for silent persistence and producing verified, comprehensive remediation steps."
+    ],
+    "one_liner": "What\u2019s striking is that even top models can \u201csee\u201d alerted compromise artifacts yet still cannot reliably finish the job\u2014persistence hunting and verified remediation remain the hard wall.",
+    "emoji": "\ud83d\udd75\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "Tongyi Lab, Alibaba Group",
+      "Alibaba Cloud Computing, Alibaba Group",
+      "The Hong Kong University of Science and Technology"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.23015v1",
+    "url": "http://arxiv.org/pdf/2607.23015v1.pdf",
+    "published": "2026-07-25T03:16:07Z",
+    "title": "Mask2Shield: Strengthening LLM Safety against Neuron-Pruning Attacks",
+    "authors": [
+      "Ying JinCheng",
+      "Minghui Xu",
+      "Yinhao Xiao",
+      "Xiuzhen Cheng",
+      "Wencheng Yang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Masked-forward safety alignment that zeroes selector-identified FFN \u201csafety\u201d channels during harmful training cuts recomputed pruning attack successes from 80\u2013279/313 prompts in base models to 1\u201344/313 across 10 diverse LLM configurations, indicating refusal can be redistributed away from a small removable neuron set.",
+      "Under the iterative TwinBreak pruning pipeline (five rounds of 1% channel removals), defended models reduce endpoint attack success rates from ~94\u201399% (published baselines after iteration 5 on HarmBench/AdvBench/JailbreakBench) down to 0\u201315% depending on architecture, demonstrating cross-pipeline robustness rather than overfitting to one neuron selector.",
+      "Cumulative targeted deletion on a defended model keeps ASR \u226418/313 up to 5% removal while maintaining 68.05% output validity, but at 10% removal validity collapses to 0/313, implying attackers must choose between failing to bypass safety or breaking coherent generation as pruning becomes aggressive."
+    ],
+    "one_liner": "Training the model to refuse while its own \u201csafety neurons\u201d are functionally missing makes post-hoc neuron-pruning jailbreaks largely ineffective unless the attacker prunes so much that generation collapses.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Guangdong University of Finance and Economics",
+      "Shandong University",
+      "University of Southern Queensland"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.26339v1",
+    "url": "http://arxiv.org/pdf/2607.26339v1.pdf",
+    "published": "2026-07-28T23:21:04Z",
+    "title": "RAGuard: A Layered Defense Framework for Retrieval-Augmented Generation Systems Against Data Poisoning",
+    "authors": [
+      "Pushkal Kumar",
+      "Tucker Nielson",
+      "Tanish Kolhe",
+      "Shubham Zala",
+      "Vincent Li"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A black-box, label-free leave-one-out filtering layer (ZKIP) reduced measured poisoning attack success rate (ASR) to 0.000 across all defended Natural Questions configurations tested (dense retrievers and BM25) at 10% and 30% corpus poison ratios by flagging documents whose removal sharply shifts the model\u2019s answer and/or lowers output uncertainty.",
+      "Adversarial retriever fine-tuning on synthetic poison families (fabrication/contradiction/reasoning-trap) improved retrieval under poisoning (e.g., Recall@5 0.319 vs 0.259 at NQ 10%) but still left nontrivial residual ASR (0.072), implying retrieval hardening alone is insufficient and benefits most as a ranking-quality complement to inference-time filtering.",
+      "ZKIP preserved retrieval utility while blocking attacks\u2014keeping Recall@5 within ~0.03 of the clean-corpus dense baseline (0.282) in defended runs\u2014at the cost of k+1 generator passes per query (6\u00d7 overhead at k=5), making batching/early-stopping/approximate probing key for deployment feasibility."
+    ],
+    "one_liner": "A self-referential, counterfactual \u201cremove-one-document\u201d test can zero out measured RAG poisoning success without poison labels or ground-truth answers, trading primarily for extra generator compute rather than accuracy.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.22695v1",
+    "url": "http://arxiv.org/pdf/2607.22695v1.pdf",
+    "published": "2026-07-17T17:23:39Z",
+    "title": "PANOPTICON: A PII-Based Assemblage of Naturalistic Output Tokens for Investigating Privacy Leakage Within LLM Context Window",
+    "authors": [
+      "Ryan Thornton",
+      "Mir Mehedi Ahsan Pritom",
+      "Maanak Gupta"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23312v1",
+    "url": "http://arxiv.org/pdf/2607.23312v1.pdf",
+    "published": "2026-07-25T17:59:35Z",
+    "title": "A Structured Cyber Threat Intelligence Dataset Using STIX 2.1 Entities and MITRE ATT&CK Mappings",
+    "authors": [
+      "Dipshikha Das",
+      "Arnab Banik",
+      "Md. Shariful Islam",
+      "Md Rayhanur Rahman"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A manually curated dataset structures 150 public English CTI reports (2015\u20132026) into STIX 2.1 report-level graphs totaling 4,777 entities and 5,817 directed relationships, averaging 32 nodes and 39 edges per report.",
+      "Adversarial behaviors are normalized via 1,273 STIX attack-pattern mappings to 269 unique MITRE ATT&CK Enterprise techniques/sub-techniques spanning all 15 tactics, enabling cross-report comparison despite vendor-specific terminology.",
+      "On a rigorously adjudicated 25-report reference subset (~17% of the corpus), human agreement was substantial (quadratic-weighted \u03ba=0.64 type, 0.67 ATT&CK mapping, 0.62 relationships) and the best local LLM judge (Qwen3.6:27B) reached \u03ba up to 0.803 with >92% micro-F1 and <5% false positives, indicating LLMs can flag inconsistencies but not replace expert validation."
+    ],
+    "one_liner": "A rare report-level STIX+ATT&CK ground-truth dataset that preserves entity relationships and shows local open-source LLMs can reliably audit annotations at scale.",
+    "emoji": "\ud83d\udd78\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "University of Dhaka",
+      "The University of Alabama"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2605.10834v3",
+    "url": "http://arxiv.org/pdf/2605.10834v3.pdf",
+    "published": "2026-05-11T16:50:00Z",
+    "title": "From Controlled to the Wild: Evaluation of Pentesting Agents for the Real-World",
+    "authors": [
+      "Pedro Conde",
+      "Henrique Branquinho",
+      "Valerio Mazzone",
+      "Bruno Mendes",
+      "Andr\u00e9 Baptista",
+      "Nuno Moniz"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2604.06550v3",
+    "url": "http://arxiv.org/pdf/2604.06550v3.pdf",
+    "published": "2026-04-08T00:58:48Z",
+    "title": "SkillSieve: A Hierarchical Triage Framework for Detecting Malicious AI Agent Skills",
+    "authors": [
+      "Yinghan Hou",
+      "Zongyou Yang"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22611v1",
+    "url": "http://arxiv.org/pdf/2607.22611v1.pdf",
+    "published": "2026-06-14T20:32:47Z",
+    "title": "Decentralized Granular Access Control for Agentic AI Systems in Critical Infrastructure",
+    "authors": [
+      "Arun Malik",
+      "Deepal Jayasinghe",
+      "Bradley Klemick",
+      "Prachi Shah",
+      "Nitish Talasu",
+      "Vineet Tushar Trivedi"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22445v1",
+    "url": "http://arxiv.org/pdf/2607.22445v1.pdf",
+    "published": "2026-07-24T16:08:03Z",
+    "title": "Dynamic Capability Scoping for Enterprise AI Agents: A Synthetic Dataset and Three-Source Permission Architecture",
+    "authors": [
+      "Halil Burak Noyan"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A three-source permission architecture\u2014role-based ceilings, a task-context permission classifier, and deterministic policy-derived combination prohibitions\u2014aims to reduce enterprise agent attack surface by ensuring high-risk credentials never exist in context unless strictly required.",
+      "A released synthetic dataset of 600 enterprise task prompts labeled over a deployable 15-permission taxonomy achieved strong label reliability on a 10% human-reviewed sample, with Cohen\u2019s \u03ba improving from 0.917 to 0.967 after adjudication and exact-match rising from 68.3% to 85.0%.",
+      "Co-evolving synthetic prompt generation with the org policy exposed and fixed authorization gaps, cutting department ceiling violations from 46 to 3 (a 93% reduction), implying synthetic workloads can materially improve least-privilege IAM design before production rollout."
+    ],
+    "one_liner": "Dynamic least-privilege is treated as prevention (credentials absent) rather than detection (misuse noticed), with observe-only mode turning denied-permission attempts into a measurable misalignment signal.",
+    "emoji": "\ud83d\udd10",
+    "tag": "security",
+    "affiliations": [
+      "Independent Researcher"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.23752v1",
+    "url": "http://arxiv.org/pdf/2607.23752v1.pdf",
+    "published": "2026-07-26T16:54:31Z",
+    "title": "ZKP Security Tools and Verification: Coverage, Effectiveness, Adoption, and Challenges",
+    "authors": [
+      "Arman Kolozyan",
+      "Tom Sorger",
+      "Alexander Hicks",
+      "Stefanos Chaliasos"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 70 real-world Circom vulnerabilities, automated tools detected 45.7% in isolated targets but only 19.6% when run on full project codebases, indicating that scalability, tool errors, and timeouts currently erase most practical coverage in realistic settings.",
+      "Security tooling is heavily skewed toward Circom and underconstraint/nondeterminism bugs, while practitioners report the biggest unmet needs are semantic errors, Fiat\u2013Shamir/proof-system issues, and system integration failures that are perceived as poorly covered (e.g., proof-system issues: 60% hard-to-detect vs 15% adequately covered).",
+      "ZKP workflows remain human-led despite widespread LLM use (85% of developers and 83% of auditors), and adoption hinges less on raw detection power than on clearer guarantees, higher-quality reports, and lower integration effort\u2014especially for specification- or verification-driven tools."
+    ],
+    "one_liner": "The striking result is how quickly ZKP tool effectiveness collapses from toy/isolated circuits to real codebases, even as practitioners already lean on LLMs but still lack checkable, end-to-end guarantees.",
+    "emoji": "\ud83e\uddfe",
+    "tag": "general",
+    "affiliations": [
+      "Max Planck Institute for Security and Privacy (MPI-SP)",
+      "KTH Royal Institute of Technology",
+      "Ethereum Foundation",
+      "University of Athens",
+      "zkSecurity"
+    ],
+    "interest_score": 8,
+    "relevant": false
+  },
+  {
+    "id": "2607.22076v1",
+    "url": "http://arxiv.org/pdf/2607.22076v1.pdf",
+    "published": "2026-07-24T08:20:28Z",
+    "title": "PoCEvolve: Generating Proof-of-Concept Exploits from Security Patches with Vulnerability-Aware Prompt Evolution",
+    "authors": [
+      "Duc Manh Tran",
+      "Ratnadira Widyasari",
+      "Ivana Clairine Irsan",
+      "Huihui Huang",
+      "Ting Zhang",
+      "Shar Lwin Khin",
+      "Ouh Eng Lieh",
+      "Hong Jin Kang",
+      "David Lo"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23088v1",
+    "url": "http://arxiv.org/pdf/2607.23088v1.pdf",
+    "published": "2026-07-25T07:46:13Z",
+    "title": "Poster: Rethinking Security in LLM Code Generation through Real-World Risk Scenarios",
+    "authors": [
+      "Lixun Ma",
+      "Ruolong Ma",
+      "Bei Wang",
+      "Feng Wei",
+      "Zhenguang Liu",
+      "Lorenzo Cavallaro",
+      "Wentao Chen"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 2,700 test cases spanning 9 programming languages and three real-world prompt risk scenarios, all 8 evaluated LLMs produced insecure code more than 56% of the time, indicating weak security-by-default under realistic developer inputs.",
+      "Ambiguous requirements are the most failure-prone condition, with vulnerability rates reaching 66%, implying that omitting explicit security constraints systematically pushes models toward unsafe \u201cfill in the blanks\u201d implementations.",
+      "Security-aware prompting substantially reduces risk (up to a 45% vulnerability-rate reduction), but in security\u2013functionality conflict cases it can backfire with regression rates up to 19% (net gain 0.12), highlighting that mitigation must be conflict-aware rather than purely adding generic safety guidance."
+    ],
+    "one_liner": "Realistic prompt-side risk conditions (ambiguity, missing context, and functionality-vs-security tension) drive LLM-generated code into vulnerable defaults, and simple prompting mitigations help but can introduce regressions when requirements conflict.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "Zhejiang University",
+      "University College London",
+      "MetaX Integrated Circuit Co., Ltd.",
+      "Artificial Intelligence Institute, CAICT"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.25225v1",
+    "url": "http://arxiv.org/pdf/2607.25225v1.pdf",
+    "published": "2026-07-28T02:57:19Z",
+    "title": "SecDrift: Measuring Sector-Conditioned Security Drift in AI-Generated Code",
+    "authors": [
+      "Narayanaswami Natraj Bharadwaj",
+      "Dhivya Chandramouleeswaran"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Across 5,355 generations spanning 7 LLMs, 8 CISA sectors, and 9 CWE scenarios, sector-conditioned prompting produced no statistically significant change in static-analysis vulnerability rates (baseline 14.0% vs industry 11.4%, \u22122.7pp; Fisher\u2019s exact p=0.24; Cohen\u2019s h=\u22120.08).",
+      "All 8 critical-infrastructure sectors showed negligible, non-significant drift versus baseline (0/8 significant with or without Bonferroni correction; |h|<0.15), and a non-CISA placebo (e-commerce/online education) matched the CISA industry rate (10.5% vs 11.4%, p=0.63), implying any small pooled pattern is generic \u201cindustry specificity\u201d rather than sector identity.",
+      "The apparent aggregate \u201cprotective\u201d shift is a composition artifact dominated by CWE-502 and CWE-22 (excluding both flips the drift to +0.4pp with p=1.00), while model selection is the reliable lever with full-output models spanning 11.6%\u201316.1% vulnerability rates (DeepSeek R1 drops to 1.8% but is confounded by high abstention), and human review found static analysis missed vulnerabilities in 26.7% of zero-flag categories (especially XSS and weak crypto), so reported zero rates are lower bounds."
+    ],
+    "one_liner": "Industry framing doesn\u2019t reliably make AI-generated code safer or riskier, but the choice of model and the blind spots of static analyzers materially shape measured security outcomes.",
+    "emoji": "\ud83d\udcc9",
+    "tag": "security",
+    "affiliations": [
+      "Independent Researcher"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.25572v1",
+    "url": "http://arxiv.org/pdf/2607.25572v1.pdf",
+    "published": "2026-07-28T10:59:04Z",
+    "title": "Mapping CVEs to MITRE ATT&CK Techniques: A Curated Gold-Set Classifier and the Limits of LLM-Assisted Label Expansion",
+    "authors": [
+      "C\u00e9dric Bonhomme",
+      "Alexandre Dulaunoy"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A curated 1,207-CVE gold set (CTID expert mappings) enables a RoBERTa multi-label classifier that nearly doubles analyst-facing ranking quality versus a zero-shot embedding baseline, raising recall@5 from 0.322 to 0.686 (MRR 0.397\u21920.620).",
+      "Deterministic CWE\u2192CAPEC\u2192ATT&CK derivation is dominated by table-expansion artifacts: on 39,156 CVEs it labels 88.3% but assigns a median of 8 techniques per CVE (mean 13.3) and stamps specific techniques onto ~half of all CVEs (e.g., T1574.007 appears in 53%), making it unsuitable as a training target for behaviorally faithful mapping.",
+      "LLM-assisted label expansion fails at ~0.39 expert agreement: adding 100\u2013984 LLM-labeled CVEs yields no reliable ranking gains and at ~1,000 added rows reduces rare-technique coverage (macro-F1 \u22120.04), indicating performance is label-quality-bound rather than data-bound and that evaluation protocols must avoid test-split checkpoint selection to prevent noise-driven false conclusions."
+    ],
+    "one_liner": "The most striking result is that scaling cheap LLM labels does not help\u2014and can harm the long tail\u2014while a small amount of truly curated labeling monotonically improves CVE\u2192ATT&CK mapping quality.",
+    "emoji": "\ud83d\uddfa\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "Computer Incident Response Center Luxembourg (CIRCL)"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2504.08854v3",
+    "url": "http://arxiv.org/pdf/2504.08854v3.pdf",
+    "published": "2025-04-11T03:48:57Z",
+    "title": "Large Language Models and Attention-Based AI for Hardware Design and Security: Progress, Challenges, and Opportunities",
+    "authors": [
+      "Sujan Ghimire",
+      "Parsa Mirfasihi",
+      "Muhtasim Alam Chowdhury",
+      "Harish Kumar Dharavath",
+      "Banafsheh Saber Latibari",
+      "Muntasir Mamun",
+      "Jaeden Wolf Carpenter",
+      "Benjamin Tan",
+      "Hammond Pearce",
+      "Krishnendu Chakrabarty",
+      "Pratik Satam",
+      "Soheil Salehi"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26314v1",
+    "url": "http://arxiv.org/pdf/2607.26314v1.pdf",
+    "published": "2026-07-28T22:23:34Z",
+    "title": "StealthBench: Measuring Operational Stealth in Autonomous Offensive-Security Agents",
+    "authors": [
+      "Ads Dawson",
+      "Adrian Wood"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "No evaluated agent exceeded a 54% safe success rate (task solved and judged stealth-clean), showing that operational tradecraft failures remain a first-order blocker for deploying autonomous offensive-security agents in realistic engagements.",
+      "Across 771 trajectories, 68.4% solved the task but only 43.8% were both solved and stealthy, meaning 24.5% of all runs were \u201creckless solves\u201d that achieved objectives while still creating detectable or damaging OPSEC incidents.",
+      "A 3-model LLM judge panel (GPT-5.6 Sol, GLM 5.2, Kimi K3) produced near-human-style consistency for stealth classification with Fleiss\u2019 \u03ba=0.834, 87.9% unanimous verdicts, and only 12.1% split votes, indicating stealth can be monitored at scale with structured rubrics."
+    ],
+    "one_liner": "Operational stealth is largely independent from exploit capability, and a cheap, high-agreement judge panel can quantify the \u201crecklessness tax\u201d where agents succeed but burn the engagement.",
+    "emoji": "\ud83d\udd75\ufe0f",
+    "tag": "security",
+    "affiliations": [],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24817v1",
+    "url": "http://arxiv.org/pdf/2607.24817v1.pdf",
+    "published": "2026-07-17T06:32:12Z",
+    "title": "Retrieval-Augmented Generation in LLMs for Mental Health: Quantifying the Incremental Contribution of Retrieval Within a Layered Safety Architecture",
+    "authors": [
+      "Anand Gupta",
+      "Akshat Surolia",
+      "Shubham Mishra",
+      "Shakil Imtiaz",
+      "Chaitali Sinha"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.24339v1",
+    "url": "http://arxiv.org/pdf/2607.24339v1.pdf",
+    "published": "2026-07-27T12:17:21Z",
+    "title": "Gubernaut: A Deterministic Homeostatic Controller for Affect-Regulated LLM Agents, Validated Across Independent Model Families",
+    "authors": [
+      "Dushyant Sharma"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A deterministic runtime control layer reduced judged conversational reactivity in 15/16 generator\u00d7judge pairings (13/16 at p<.05), with the lone failure being a small null effect (\u22120.04) rather than a reversal, implying consistent cross-model behavioral stabilization but bounded by host headroom.",
+      "Adding an independent judge family (xAI Grok 4.3) preserved the effect (the Grok judge column passes 4/4 cooks), strengthening the claim that the observed calm is not merely judge-lineage or shared-style bias in LLM-as-judge evaluations.",
+      "The controller exhibited a replicated homeostatic \u201crecovery signature\u201d across 4/4 model families\u2014arousal integrates during sustained hostile-valence input and then decays after user de-escalation\u2014suggesting closed-loop regulation dynamics that a stateless \u201cstay calm\u201d prompt cannot produce in principle."
+    ],
+    "one_liner": "A token-free, deterministic meta-controller that only reads numeric telemetry shows cross-family reductions in multi-turn emotional escalation while remaining structurally insulated from text-based prompt injection into the controller itself.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Gubernaut Research"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": [
+      "longitudinal-cognitive-harm-trajectories",
+      "psychosocial-harm-multimodal-multicultural"
+    ]
+  },
+  {
+    "id": "2607.25379v1",
+    "url": "http://arxiv.org/pdf/2607.25379v1.pdf",
+    "published": "2026-07-28T07:34:37Z",
+    "title": "Cyber-Capable AI Agents: Vulnerabilities, Evaluation Containment, and Defensive Response",
+    "authors": [
+      "Abu Bakar Siddik"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Indirect prompt-injection and memory-poisoning attacks can redirect tool-using agents at rates spanning ~24% to ~98% depending on scaffold and defenses, implying that \u201cprompt safety\u201d is an unreliable boundary once agents can retrieve, store, and act on untrusted content.",
+      "End-to-end exploit synthesis remains scaffold- and information-dependent (e.g., 157/898 ExploitGym instances solved in the strongest configuration, while one-day exploitation jumps from 7% to 87% when a CVE description is provided), so capability scores alone do not translate to real-world risk without explicit containment and privilege assumptions.",
+      "Defensive response is constrained by dual-use filtering: one benchmark reports a 2.72\u00d7 higher refusal rate for defensive than neutral requests (with 43.8% refusals for system hardening and 34.3% for malware analysis), indicating that artifact-only safety gates can block incident responders unless role-aware access controls are engineered and evaluated."
+    ],
+    "one_liner": "The core takeaway is that cyber-capable agent evaluations must treat containment, tool privileges, and responder access as first-class security properties rather than background setup.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "Rajshahi University of Engineering & Technology"
+    ],
+    "interest_score": 6,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.15263v3",
+    "url": "http://arxiv.org/pdf/2607.15263v3.pdf",
+    "published": "2026-07-16T17:54:47Z",
+    "title": "Beyond Success Rate: Cost-Aware Evaluation of Offensive and Defensive Security Agents",
+    "authors": [
+      "Paul Kassianik",
+      "Blaine Nelson",
+      "Yaron Singer"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23147v1",
+    "url": "http://arxiv.org/pdf/2607.23147v1.pdf",
+    "published": "2026-07-25T10:55:14Z",
+    "title": "False Prophets: On the Security of World Models in Agentic Systems",
+    "authors": [
+      "Erik Imgrund",
+      "Anna Wimbauer",
+      "Klim Kireev",
+      "Konrad Rieck"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Text-based world models used to vet agent actions can be adversarially steered into harmful mispredictions\u2014with induced failures reaching up to 95% in some categories\u2014enabling unintended command execution, denial of service, wallet-draining token blowups, and sensitive data exposure in terminal agents.",
+      "On a 700-script security benchmark (AgentWorld-Robust), Qwen-AgentWorld achieved 86% exit-code accuracy but only 44% exact-output accuracy (CWM: 77% / 23%), implying that \u201clooks safe\u201d simulations frequently diverge from reality even when the agent would proceed based on a seemingly correct high-level outcome.",
+      "Runtime/resource estimation is a critical intrinsic weakness: both evaluated models underestimated runtime in 95% of cases (often by tens of minutes, sometimes predicting <1s for jobs that exceed 1h), creating a systematic optimism bias that can approve scripts that actually time out or exhaust resources."
+    ],
+    "one_liner": "World models add a new attack surface where simulation errors\u2014not just LLM jailbreaks\u2014can reliably trick agents into executing dangerous real-world commands.",
+    "emoji": "\ud83e\uddea",
+    "tag": "security",
+    "affiliations": [
+      "BIFOLD",
+      "TU Berlin"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2508.04227v3",
+    "url": "http://arxiv.org/pdf/2508.04227v3.pdf",
+    "published": "2025-08-06T09:03:10Z",
+    "title": "Continual Learning for VLMs: A Survey and Taxonomy Beyond Forgetting",
+    "authors": [
+      "Yuyang Liu",
+      "Qiuhe Hong",
+      "Linlan Huang",
+      "Alexandra Gomez-Villa",
+      "Dipam Goswami",
+      "Tiantian Peng",
+      "Xialei Liu",
+      "Joost van de Weijer",
+      "Yonghong Tian"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22600v1",
+    "url": "http://arxiv.org/pdf/2607.22600v1.pdf",
+    "published": "2026-06-12T13:58:04Z",
+    "title": "Chart Deception in Vision-Language Models: From Vulnerability to Mitigation",
+    "authors": [
+      "Ridwan Mahbub",
+      "Mohammed Saidul Islam",
+      "Md Tahmid Rahman Laskar",
+      "Mizanur Rahman",
+      "Mir Tafseer Nayeem",
+      "Enamul Hoque"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2510.12993v3",
+    "url": "http://arxiv.org/pdf/2510.12993v3.pdf",
+    "published": "2025-10-14T21:10:50Z",
+    "title": "Tailored untruths: How personalisation challenges LLM safeguards",
+    "authors": [
+      "Jo\u00e3o A. Leite",
+      "Jo\u00e3o Luz",
+      "Silvia Gargova",
+      "Arnav Arora",
+      "Gustavo Sampaio",
+      "Ian Roberts",
+      "Carolina Scarton",
+      "Kalina Bontcheva"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.25814v1",
+    "url": "http://arxiv.org/pdf/2607.25814v1.pdf",
+    "published": "2026-07-28T14:58:28Z",
+    "title": "Evaluation of Adversarial Robustness in Arabic Language Models",
+    "authors": [
+      "Anwar Alajmi",
+      "Ayed Salman",
+      "Imtiaz Ahmad"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Character-level diacritics insertion is an especially potent black-box attack on Arabic BERT-style classifiers, dropping AraBERT\u2019s accuracy from 94% to 2% (\u221292 percentage points) while keeping perturbations low (~15% Levenshtein), showing that morphologically meaningful \u201csmall\u201d edits can catastrophically break performance.",
+      "Word-level conjunction manipulation preserves meaning unusually well (\u224893\u201396% cosine similarity) yet still causes large failures (up to \u221258 points on AraBERT and \u221239 on XLM-T), indicating that models over-rely on shallow syntactic cues even when semantics remain largely unchanged.",
+      "Standard adversarial training improves robustness most for higher-level shifts (e.g., paraphrase robustness gains up to +48.4 points for MARBERT and +45.3 for CaMeLBERT) but remains weak against character noise (e.g., AraBERT still only 22.61% under diacritics and 20.87% under visual attacks) and increases training cost by ~25\u201340%, implying the need for character-aware defenses beyond vanilla augmentation."
+    ],
+    "one_liner": "Arabic-specific orthographic and morphological perturbations (especially diacritics) can nearly nullify sentiment classifiers with minimal visible change, and adversarial training only partially closes this gap.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Kuwait University",
+      "Public Authority of Applied Education and Training, Kuwait",
+      "College of Business Studies, Public Authority of Applied Education and Training, Kuwait"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2508.02092v3",
+    "url": "http://arxiv.org/pdf/2508.02092v3.pdf",
+    "published": "2025-08-04T06:00:22Z",
+    "title": "FPEdit: Robust LLM Fingerprinting through Localized Parameter Editing",
+    "authors": [
+      "Shida Wang",
+      "Chaohu Liu",
+      "Yubo Wang",
+      "Linli Xu"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23838v1",
+    "url": "http://arxiv.org/pdf/2607.23838v1.pdf",
+    "published": "2026-07-26T20:52:23Z",
+    "title": "TriShieldRAG: A Three-Ring Defense-in-Depth Framework Against Knowledge Corruption in Retrieval-Augmented Generation",
+    "authors": [
+      "Susil Kumar Mohanty",
+      "Rohit Patel",
+      "Kosuru Yuvaraj",
+      "Jeenal Chaudhary",
+      "Disha Singhania"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A three-layer RAG defense (ingest-time lexical/statistical screening, retrieval-time provenance+consistency trust re-ranking, and generation-time cross-model voting with one bounded re-retrieval) reduced knowledge-poisoning attack success from ~91% to ~13% on a 5,000-document Wikipedia KB with 10 targeted questions while preserving benign-query accuracy.",
+      "Layered defenses hinge on explicit preconditions: retrieval/generation aggregation is only expected to work when poisoned documents remain a minority of the retrieved top\u2011k (\u03c1<0.5), because once poison becomes the majority it can dominate both inter-document \u201cconsistency\u201d signals and majority voting, yielding confident but wrong answers.",
+      "Provenance weighting can provide a hard safety floor for correctly tagged trusted sources (a clean document\u2019s trust score is guaranteed \u22650.45, above the drop threshold \u03d12=0.35), but this protection collapses if attackers can spoof or obtain trusted provenance metadata, making provenance attestation and write-access controls a high-leverage deployment requirement."
+    ],
+    "one_liner": "The most interesting aspect is the explicit, formally stated failure boundary (minority-poison + provenance-tag assumptions) showing exactly when multi-stage RAG defenses should work and when they should be expected to fail.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Indian Institute of Technology Jodhpur"
+    ],
+    "interest_score": 6,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2603.03536v2",
+    "url": "http://arxiv.org/pdf/2603.03536v2.pdf",
+    "published": "2026-03-03T21:46:53Z",
+    "title": "SafeCRS: Personalized Safety Alignment for LLM-Based Conversational Recommender Systems",
+    "authors": [
+      "Haochang Hao",
+      "Yifan Xu",
+      "Xinzhuo Li",
+      "Yingqiang Ge",
+      "Lu Cheng"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2603.10913v3",
+    "url": "http://arxiv.org/pdf/2603.10913v3.pdf",
+    "published": "2026-03-11T15:58:47Z",
+    "title": "LLM2Vec-Gen: Generative Embeddings from Large Language Models",
+    "authors": [
+      "Parishad BehnamGhader",
+      "Vaibhav Adlakha",
+      "Fabian David Schmidt",
+      "Nicolas Chapados",
+      "Marius Mosbach",
+      "Siva Reddy"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.06608v2",
+    "url": "http://arxiv.org/pdf/2607.06608v2.pdf",
+    "published": "2026-07-07T05:45:29Z",
+    "title": "Security and Privacy in Agentic AI: Grand Challenges and Future Directions",
+    "authors": [
+      "Adam Jenkins",
+      "Agnieszka Kitkowska",
+      "Caterina Maidhof",
+      "Diego Paracuellos",
+      "Francesco Sovrano",
+      "Gonzalo Gabriel Mendez",
+      "Guillermo Suarez-Tangil",
+      "Hana Kopecka",
+      "Isabel Wagner",
+      "Isabel Barbera",
+      "Javier Carnerero-Cano",
+      "Jide Edu",
+      "Jose Luis Martin-Navarro",
+      "Jose Such",
+      "Josep Domingo-Ferrer",
+      "Juan Carlos Carrillo",
+      "Kopo Marvin Ramokapane",
+      "Mark Cote",
+      "Pablo Vellosillo",
+      "Ramon Ruiz-Dolz",
+      "Rongjun Ma",
+      "Ruba Abu-Salma",
+      "Sameer Patil",
+      "William Seymour",
+      "Xiao Zhan"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.25890v1",
+    "url": "http://arxiv.org/pdf/2607.25890v1.pdf",
+    "published": "2026-07-28T15:50:16Z",
+    "title": "Distributing Security Controls Through Harness Engineering",
+    "authors": [
+      "William Robert Gore"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A distributable security-hardened harness (SHarD) embedded OS sandboxing, skill scanning, and tool restriction behind a single install command and reached a 100% adjusted test score with no regressions versus the baseline harness across any test category.",
+      "On two commercial coding agents, adding off\u2011the\u2011shelf controls improved composite security from 60.9%\u219287.0% for Claude Code (+26.1 points) and from 45.7%\u219269.6% for Codex (+23.9 points), with skill scanning showing the largest gains (Claude 58.3%\u2192100%, Codex 16.7%\u219275%).",
+      "Content-protection/guardrail tooling provided 0.0 percentage-point improvement on targeted tests for both agents (Claude 66.7%\u219266.7%, Codex 61.1%\u219261.1%) and introduced workflow-breaking control conflicts, implying today\u2019s filtering-based defenses are brittle under multi-control deployments compared to boundary-enforced controls (e.g., kernel sandboxing)."
+    ],
+    "one_liner": "Security controls for coding agents can be reliably scaled to distributed teams by shipping them as harness-level defaults (especially sandboxing + skill scanning), avoiding vendor lock-in while preserving efficacy.",
+    "emoji": "\ud83e\uddf0",
+    "tag": "security",
+    "affiliations": [
+      "Georgia Institute of Technology"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.27288v1",
+    "url": "http://arxiv.org/pdf/2607.27288v1.pdf",
+    "published": "2026-07-29T14:46:04Z",
+    "title": "Open Security Benchmark: Towards Autonomous Enterprise Cyber Defense",
+    "authors": [
+      "Gal Engelberg",
+      "Michael Arenzon",
+      "Leon Goldberg"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "OSB closes the enterprise \u201cenvironment data gap\u201d by benchmarking agentic posture-investigation end-to-end on a frozen, cross-vendor enterprise snapshot with closed-form ground truth, enabling reproducible trust assessments rather than anecdotal demos.",
+      "The framework evaluates the same tasks through two operationally realistic modalities\u2014execution-grounded text-to-SQL over a 44-table relational snapshot and native vendor APIs over a served instance\u2014so agent scores reflect both answer correctness and the evidence-generation path used in practice.",
+      "An initial release instantiates 127 identity-security tasks (77 single-platform visibility + 50 cross-vendor correlation) across three environment scales (~75/400/2,000 employees; ~1,600/8,300/36,000 rows), making robustness to organizational size a first-class measurement rather than a hidden confound."
+    ],
+    "one_liner": "A practical benchmark substrate that finally makes \u201ccan we trust an enterprise defense agent?\u201d measurable via frozen multi-vendor posture state, grounded answers, and auditable tool traces.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "open.security (by Sola Security)"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2605.22321v2",
+    "url": "http://arxiv.org/pdf/2605.22321v2.pdf",
+    "published": "2026-05-21T11:07:51Z",
+    "title": "ASEval: Automated Trajectory-Level Security Testing for Autonomous Agents",
+    "authors": [
+      "Jianan Ma",
+      "Xiaohu Du",
+      "Ruixiao Lin",
+      "Yaoxiang Bian",
+      "Jialuo Chen",
+      "Yunhao Feng",
+      "Xiaofang Yang",
+      "Shiwen Cui",
+      "Changhua Meng",
+      "Xinhao Deng",
+      "Jingyi Wang",
+      "Zhen Wang"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26069v1",
+    "url": "http://arxiv.org/pdf/2607.26069v1.pdf",
+    "published": "2026-06-23T08:57:30Z",
+    "title": "AI Security Priorities: A Field-Wide Agenda",
+    "authors": [
+      "Gil Gekker",
+      "Rachel Steratore",
+      "Everett Smith",
+      "Asher Brass-Gershovich",
+      "Varun Gandhi",
+      "Nicole Nichols",
+      "Vijay Bolina",
+      "Buck Shlegeris",
+      "Lisa Einstein",
+      "Dan Lahav",
+      "Omer Nevo",
+      "Sella Nevo"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22569v1",
+    "url": "http://arxiv.org/pdf/2607.22569v1.pdf",
+    "published": "2026-06-01T04:20:25Z",
+    "title": "Execution-Grounded Security Testing for Coding Agents in Software Engineering Pipelines",
+    "authors": [
+      "Yifei Ge",
+      "Weisong Sun",
+      "Jinkun Xiao",
+      "Yuchen Chen",
+      "Yebo Feng",
+      "Peizhuo Lv",
+      "Xia Feng",
+      "Chunrong Fang",
+      "Zhihong Zhao",
+      "Zhenyu Chen",
+      "Yang Liu"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.28147v1",
+    "url": "http://arxiv.org/pdf/2607.28147v1.pdf",
+    "published": "2026-07-30T12:54:25Z",
+    "title": "Agent Harness Distillation: Inference-Time Harness Extraction and Exploitation in Autonomous Multi-Agent Systems",
+    "authors": [
+      "Yu Cui",
+      "Wuli Yang",
+      "Yirui Shi",
+      "Junhao Xia",
+      "Hui Jiang",
+      "Lei Gao",
+      "Chenfu Bao"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Black-box \u201cAgent Harness Distillation\u201d can extract and transfer inference-time orchestration (topology, tools, memory/verification routines) from autonomous multi-agent systems, showing that harness behavior is a practical IP leakage surface even when internal logs are inaccessible or encrypted.",
+      "Pre-distilled harnesses measurably boost weaker backbones more than strong ones, with average accuracy rising from 33.57% to 39.87% (+6.30) on Hermes-harness transfer and from 33.57% to 41.17% (+7.60) on Claude Code-harness transfer across four recipient models, implying stolen harnesses can \u201cupgrade\u201d commodity models into more capable agents.",
+      "Post-distillation loop alignment can deliver large downstream capability jumps (e.g., on MMLU-Pro CS with Qwen3.6-Flash: 38.75% baseline \u2192 41.25% pre-distill \u2192 86.25% post-distill, a +45.00 point gain vs pre-distill), while deception-based responses can substantially degrade extraction metrics (CV/IF/CT/PP) yet largely preserve task accuracy, making misdirection a plausible near-term defense."
+    ],
+    "one_liner": "Inference-time harnesses are extractable like model knowledge, turning agent workflow engineering into a stealable, transferable capability layer\u2014and forcing AMAS builders to treat orchestration as a first-class security boundary.",
+    "emoji": "\ud83e\uddf0",
+    "tag": "security",
+    "affiliations": [
+      "Baidu Inc.",
+      "Tsinghua University"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.27267v1",
+    "url": "http://arxiv.org/pdf/2607.27267v1.pdf",
+    "published": "2026-07-29T09:41:07Z",
+    "title": "FAVA: Formal Authorization for Verified Agents with Evidence-Backed Permission Graphs",
+    "authors": [
+      "Yifan Zhang",
+      "Xinkui Zhao",
+      "Sai Liu",
+      "Hengxuan Lou",
+      "Guanjie Cheng",
+      "Chang Liu"
+    ],
+    "downloaded": true,
+    "summarized": false
+  },
+  {
+    "id": "2601.17303v2",
+    "url": "http://arxiv.org/pdf/2601.17303v2.pdf",
+    "published": "2026-01-24T04:25:36Z",
+    "title": "Decentralized Multi-Agent Swarms for Autonomous Grid Security in Industrial IoT: A Consensus-based Approach",
+    "authors": [
+      "Samaresh Kumar Singh",
+      "Joyjit Roy",
+      "Chirag Agrawal"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.28591v1",
+    "url": "http://arxiv.org/pdf/2607.28591v1.pdf",
+    "published": "2026-07-30T17:44:31Z",
+    "title": "Change2Task: From Repository Changes to Executable Coding Agent Tasks and Environments",
+    "authors": [
+      "Haomin Qi",
+      "Xingliang Wang",
+      "Xuanqi Gao",
+      "Baihui Sang",
+      "Xin Zhang",
+      "Minghua Ma",
+      "Pengfei Gao",
+      "Yu Kang",
+      "Qingwei Lin",
+      "Saravan Rajmohan",
+      "Dongmei Zhang",
+      "Qi Zhang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Change2Task converts merged PRs into executable, verifier-backed coding-agent tasks on healthy descendant commits, achieving 79.6% verified construction success (900/1,130) across five task families and recovering 29.2% more verified Bug Fix tasks than a matched PR-mirroring baseline (500 vs 387 on 621 candidates).",
+      "Most recoverable tasks require adaptation beyond simple patch reversal\u2014only 10.6% succeed via direct reversal and 21.1% via code mapping, while 68.3% need agent reconstruction\u2014yet the resulting tasks preserve source-change structure with 0.894 weighted \u201cchange-profile fidelity\u201d on average (macro 0.887).",
+      "Paired evaluations show reconstructed modern tasks largely preserve benchmarking signal: across 3,600 matched agent-task runs, branch outcomes agree 89.7% of the time (\u03ba=0.787) with up to 98.0% agreement in some matched settings, while reusing 388 modern bases for 900 tasks cuts setup time 58.4%, storage 71.2%, and overall pipeline spend 10.8% ($1,917\u2192$1,710)."
+    ],
+    "one_liner": "Repository history can be \u201creplayed\u201d onto modern, runnable code to mass-produce realistic coding-agent tasks while keeping evaluation outcomes and cutting environment costs.",
+    "emoji": "\ud83e\udde9",
+    "tag": "general",
+    "affiliations": [
+      "Microsoft",
+      "University of California San Diego",
+      "Zhejiang University",
+      "Xi\u2019an Jiaotong University",
+      "Nanjing University"
+    ],
+    "interest_score": 8,
+    "relevant": false
+  },
+  {
+    "id": "2606.06460v3",
+    "url": "http://arxiv.org/pdf/2606.06460v3.pdf",
+    "published": "2026-06-04T17:50:54Z",
+    "title": "Will the Agent Recuse, and Will It Stop? Measuring LLM-Agent Compliance with In-Band Governance Signals at the Access Door and Mid-Flight",
+    "authors": [
+      "Thamilvendhan Munirathinam"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.26201v1",
+    "url": "http://arxiv.org/pdf/2607.26201v1.pdf",
+    "published": "2026-07-28T19:06:24Z",
+    "title": "(EC)2: Event-Centric Explainability for Cybersecurity Through Multi-Agent LLM Investigations",
+    "authors": [
+      "Neta Kirmayer",
+      "David Tayouri",
+      "Andr\u00e9s Murillo",
+      "Motoyoshi Sekiya",
+      "Asaf Shabtai",
+      "Rami Puzis"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "(EC)2\u2019s hypothesis-driven multi-agent investigations produced substantially higher-quality alert explanations than a single-call LLM baseline, improving mean scores on Attack Type Identification (3.21 vs 1.49), Entity Identification (4.10 vs 3.22), and Explanation Completeness (3.04 vs 1.29) over 50 CSE-CIC-IDS2018 events.",
+      "External evidence retrieval is the dominant driver of explanation fidelity: removing database access collapsed mean scores to 1.83 (attack type), 2.46 (entities), and 1.63 (completeness), while using only traffic or only topology still significantly underperformed the full system (traffic-only: 2.89/3.95/2.76; topology-only: 2.31/2.65/2.18).",
+      "Using investigation outputs to reclassify the most uncertain 5% of AE-IDS decisions (1,000 stratified samples) improved recall from 0.54 to 0.72 and precision from 0.56 to 0.73 while reducing FPR from 0.43 to 0.26, with McNemar \u03c7\u00b2=118.4 (p<0.001) showing systematic error correction (207 fixed vs 37 newly introduced)."
+    ],
+    "one_liner": "Shifting from feature attribution to event-centric, evidence-grounded investigations makes LLM agents not just explain alerts but measurably improve boundary-case intrusion detection decisions\u2014at the cost of ~17 minutes per alert.",
+    "emoji": "\ud83d\udd75\ufe0f",
+    "tag": "cyber",
+    "affiliations": [
+      "Ben-Gurion University of the Negev",
+      "Fujitsu"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.24866v1",
+    "url": "http://arxiv.org/pdf/2607.24866v1.pdf",
+    "published": "2026-07-26T18:12:41Z",
+    "title": "The Missing Layer: Specification Infrastructure for AI Oversight",
+    "authors": [
+      "Satyam Kumar",
+      "Saurabh Jha"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A five-layer oversight stack (Legibility, Specification, Mediation, Evaluation, Escalation) crossed with six persistent concerns (alignment, robustness, adversarial defense, security, governance, accountability) highlights that Layer 2 \u201cSpecification\u201d is the key dependency that must drive enforcement, evaluation, and escalation but is currently the least mature component in deployed agent oversight.",
+      "Layer 2 fails four concrete maturity indicators\u2014shared vocabulary, design principles, composability standards, and governance practices\u2014implying most current deployments cannot reliably turn intent into machine-checkable constraints, cannot compose policies across teams, and cannot produce audit-ready, versioned oversight artifacts demanded by regimes like the EU AI Act and NIST AI RMF.",
+      "Six actionable design principles for specification infrastructure (elicitability, composability, conformity, adversary-awareness, traceability, governability) are presented alongside a reference architecture where a single versioned specification compiles into runtime mediation, evaluation criteria, and escalation triggers, enabling post-incident attribution to the exact spec version and authority rather than to opaque model behavior."
+    ],
+    "one_liner": "The most interesting takeaway is that many \u201cAI safety\u201d failures reduce to missing, governed, machine-checkable specifications that can be compiled into enforcement, evaluation, and escalation\u2014turning oversight into composable infrastructure rather than bespoke prompts and ad-hoc monitoring.",
+    "emoji": "\ud83e\udde9",
+    "tag": "security",
+    "affiliations": [],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.22885v1",
+    "url": "http://arxiv.org/pdf/2607.22885v1.pdf",
+    "published": "2026-07-24T19:53:00Z",
+    "title": "ReCon: A Resource-Constrained Benchmark for LLM-Based Cybersecurity Compliance Across Ingestion and Retrieval Pipelines",
+    "authors": [
+      "Rohit Negi",
+      "Rishik Jain",
+      "Soumyo V Chakarborty",
+      "Amit Negi",
+      "Sandeep K Shukla"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A CPU-only, on-prem RAG pipeline can automate ISO/IEC 27002:2022 policy documentary compliance checks at scale, covering 93 controls across 288 unique model+retrieval configurations for 26,784 control-level evaluations without requiring GPUs.",
+      "Among eight open-weight models, Granite4.1:8B achieved the strongest overall reliability (75.0% balanced accuracy, MCC 0.548, Cohen\u2019s \u03ba 0.528) and the highest mean agreement with auditor ground truth (80.65%), while several alternatives clustered below 60% balanced accuracy\u2014indicating model choice dominates outcome quality under resource constraints.",
+      "Retrieval design materially shifts agreement, with the best-performing pipeline for Granite4.1:8B using all-MiniLM-L6-v2 embeddings plus ms-marco-MiniLM-L-12-v2 reranking (Case 2) reaching ~80.64% mean agreement, and prompt design can induce systematic errors (e.g., weaker models conflating standard requirement text with policy evidence and producing misleading confidence scores)."
+    ],
+    "one_liner": "It shows that practical, privacy-preserving compliance gap analysis can be done on commodity CPUs, but only if you pick the right small model and retrieval/prompting setup.",
+    "emoji": "\ud83e\uddfe",
+    "tag": "cyber",
+    "affiliations": [
+      "Indian Institute of Technology Kanpur",
+      "International Institute of Information Technology Hyderabad"
+    ],
+    "interest_score": 7,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.25283v1",
+    "url": "http://arxiv.org/pdf/2607.25283v1.pdf",
+    "published": "2026-07-28T04:41:13Z",
+    "title": "ContractHIL-HLS: Contract-Aligned Multi-Agent Workflow with Hardware-in-the-Loop Feedback for HLS Design",
+    "authors": [
+      "Jingbo Zhang",
+      "Haoxiang Sun",
+      "Wenbo Wang",
+      "Wenbo Zhang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Encoding natural-language HLS requirements as a structured contract (explicit interfaces, constraints, checks, and rollback rules) increased the estimated single-sample HLS-Eval testbench pass rate from 64.0% to 70.2% across 94 locally executable tasks, showing that making design intent machine-checkable materially improves first-try correctness.",
+      "Adding the full contract\u2192HTML artifact handoff plus an evidence-gated revision loop achieved 70.4% pass@1 and 76.6% pass@5 on the same 94 tasks, indicating most gains come from contract alignment while multi-agent HIL scaffolding primarily supports traceability and iteration control rather than large kernel-level accuracy jumps.",
+      "In a board-tested post-quantum secure-message accelerator, a contract-driven dual-bitstream organization cut average six-message runtime from 207.3 ms to 52.4 ms (\u22484\u00d7 faster) while keeping positive routed timing slack on both images and preserving decrypted-message verification, demonstrating that hardware-in-the-loop evidence can drive system-level architectural decisions with measurable performance impact."
+    ],
+    "one_liner": "A lightweight \u201ccontract as executable spec\u201d plus hardware evidence gates turns LLM-assisted HLS from prompt-local code generation into an auditable workflow that can reach board-level closure and trigger major system-level speedups.",
+    "emoji": "\ud83e\uddfe",
+    "tag": "general",
+    "affiliations": [
+      "Beijing University of Technology"
+    ],
+    "interest_score": 6,
+    "relevant": false
+  },
+  {
+    "id": "2607.21835v1",
+    "url": "http://arxiv.org/pdf/2607.21835v1.pdf",
+    "published": "2026-07-23T21:53:34Z",
+    "title": "ToolGuardian: Declarative Security for AI Agent-Tool Interactions",
+    "authors": [
+      "Arun Ravindran",
+      "Saurabh Deochake"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2506.08693v3",
+    "url": "http://arxiv.org/pdf/2506.08693v3.pdf",
+    "published": "2025-06-10T11:11:55Z",
+    "title": "Recognition Without Mitigation: Ethical Frameworks in Autonomous Offensive-LLM Agent Research",
+    "authors": [
+      "Andreas Happe",
+      "J\u00fcrgen Cito"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.22953v1",
+    "url": "http://arxiv.org/pdf/2607.22953v1.pdf",
+    "published": "2026-07-24T23:37:38Z",
+    "title": "Share No More Than the Request Requires: Federated Disclosure for Perspective-Aware AI",
+    "authors": [
+      "Sourena Khanzadeh",
+      "Daniel Platnick",
+      "Marjan Alirezaie",
+      "Hossein Rahnama"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Provenance Preserving Chronicles (PPC) enforces minimum-necessary disclosure by compiling each holder\u2019s temporal, predicate-labeled identity graph into a compact, relationship- and purpose-authorized evidence subgraph, so peers can be queried without centralizing raw personal data.",
+      "The framework separates authorization from sufficiency by (i) evaluating a local authorization function over every node/edge and (ii) validating a candidate release via structural requirements\u2014ontology-typed path coverage, predicate-type completeness, connectivity, and provenance completeness\u2014before anything is returned to the requester.",
+      "A two-phase \u201ctext-first, artifacts-second\u201d release flow reduces irreversible high-fidelity leakage by returning provenance-linked textual answers initially and requiring explicit holder approval for any raw artifact access, while explicitly modeling post-disclosure risks like downstream inference and prompt injection as remaining hazards."
+    ],
+    "one_liner": "It turns selective disclosure into a graph-minimization problem with provenance-first responses, aiming to operationalize \u201cshare no more than the request requires\u201d across federated, agent-mediated identity queries.",
+    "emoji": "\ud83d\uddc2\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Toronto Metropolitan University",
+      "Flybits Labs",
+      "MIT Media Lab"
+    ],
+    "interest_score": 6,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2605.06890v4",
+    "url": "http://arxiv.org/pdf/2605.06890v4.pdf",
+    "published": "2026-05-07T19:47:30Z",
+    "title": "Beyond the Black Box: Interpretability of Agentic AI Tool Use",
+    "authors": [
+      "Hariom Tatsat",
+      "Ariye Shater"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.28520v1",
+    "url": "http://arxiv.org/pdf/2607.28520v1.pdf",
+    "published": "2026-07-30T16:57:57Z",
+    "title": "Agents That Certify Their Own Exploits: Confidence-Scheduled Restricted Responses for Safe Opponent Exploitation",
+    "authors": [
+      "Boning Li",
+      "Longbo Huang"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "The method enforces a per-deployment safety budget by computing an exact full-tree best-response certificate on the *played* strategy and only committing strategies whose certified reference-relative loss is \u2264 \u03b5_max, yielding 0 certificate violations across 36,000 audited hands even under adaptive opponents.",
+      "In Leduc hold\u2019em at \u03b5_max = 0.15, it delivers 6.2\u00d7 higher steady-state gain than a money-verified binary release gate while keeping the worst deployed certificate at 0.1496 (i.e., always within budget).",
+      "Trajectory-level mixing with the same opponent estimator achieves similar gains but catastrophically overshoots safety (worst exploitability 2.04, or 14\u00d7 the budget), showing that certifying the deployed strategy\u2014not trusting the model or construction procedure\u2014is what prevents unsafe exploitation when the opponent model is wrong."
+    ],
+    "one_liner": "It turns safe exploitation into a runtime-audited property of the exact strategy you actually deploy, breaking the usual coupling between opponent-model error and exploitability blow-ups.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "general",
+    "affiliations": [
+      "IIIS, Tsinghua University",
+      "Tsinghua University"
+    ],
+    "interest_score": 8,
+    "relevant": false
+  },
+  {
+    "id": "2607.22758v1",
+    "url": "http://arxiv.org/pdf/2607.22758v1.pdf",
+    "published": "2026-07-23T20:20:45Z",
+    "title": "Spectral Dynamics of Semantic Drift in Clinical Multi-Agent Language Model Networks",
+    "authors": [
+      "Amritesh Banerjee"
+    ],
+    "downloaded": false,
+    "summarized": false
+  },
+  {
+    "id": "2607.23870v1",
+    "url": "http://arxiv.org/pdf/2607.23870v1.pdf",
+    "published": "2026-07-26T22:23:43Z",
+    "title": "MulRobBench: A Decision-Level Benchmark for Safe and Security-Policy-Compliant Multimodal UAV Agents",
+    "authors": [
+      "Belal S. Alsinglawi",
+      "Weizheng Wang",
+      "Junyi Wu",
+      "Yi Jiang",
+      "Lianhai Lin",
+      "Merouane Debbah",
+      "Izzat Alsmadi"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "MulRobBench introduces an offline, protocol-conditioned decision benchmark that couples real UAV multimodal observations with security-policy constraints and action-level safety auditing across 3,024 strict samples, 17 task-taxonomy nodes, and 12 scoring dimensions.",
+      "Across 17 audited multimodal models, the highest semantic protocol-decision score is only 0.5141 and the best strict mean scoring-dimension accuracy is 0.1599, indicating that current VLA systems remain far from reliably producing executable, policy-compliant UAV decisions under realistic constraints.",
+      "A matched 20-anchor modality-removal study changes 4\u201315 of 20 actions per model, and analyses identify modality-trust selection, constraint extraction, strong glare, missing data, and high-entropy operator shorthand as dominant drivers of action instability and policy-violation risk."
+    ],
+    "one_liner": "The standout result is that models can often describe context yet still fail where it matters: stably converting degraded multimodal evidence plus explicit security rules into an auditable safe next action.",
+    "emoji": "\ud83d\ude81",
+    "tag": "security",
+    "affiliations": [
+      "Zayed University",
+      "The University of Adelaide",
+      "University of Emergency Management",
+      "Khalifa University",
+      "Texas A&M University\u2013San Antonio"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
+  },
+  {
+    "id": "2607.26481v1",
+    "url": "http://arxiv.org/pdf/2607.26481v1.pdf",
+    "published": "2026-07-29T05:16:59Z",
+    "title": "Conformal Changepoint Localization and Root Cause Analysis with Corrupted Observations",
+    "authors": [
+      "Seunghun Yu",
+      "Meiyi Zhu",
+      "Petar Popovski",
+      "Joonhyuk Kang",
+      "Osvaldo Simeone"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "Weighted conformal changepoint localization and root-cause analysis (W-CONCH/W-CROC) preserve finite-sample, distribution-free coverage under Huber contamination while sharply shrinking confidence sets by downweighting likely-corrupted observations using classifier uncertainty.",
+      "On image changepoint benchmarks at heavy contamination (\u03b5=0.7), unweighted CONCH confidence sets ballooned to 137.43 (DomainNet) and 345.27 (CIFAR-100), while uncertainty-weighted W-CONCH reduced them to 18.77\u201322.84 and 7.24\u20139.18, respectively, at similar ~95% empirical coverage.",
+      "Meta-learned weighting (MW-CONCH/MW-CROC) further improved informativeness without needing test-time \u03b5, reaching set size 3.61 on DomainNet at \u03b5=0.7 (vs 9.81 oracle and 137.43 unweighted) and cutting root-cause penalized set size on CIFAR-100 at \u03b5=0.7 from 4.835 (CROC) to 1.915 (MW-CROC EDL-M) at ~99% coverage."
+    ],
+    "one_liner": "Distribution-free changepoint and root-cause confidence sets stay valid under corruption, but become useful again once uncertainty is turned into conformal weights\u2014often collapsing huge sets back toward oracle-level sharpness.",
+    "emoji": "\ud83c\udfaf",
+    "tag": "general",
+    "affiliations": [
+      "Korea Advanced Institute of Science and Technology",
+      "King's College London",
+      "Aalborg University",
+      "Northeastern University London"
+    ],
+    "interest_score": 7,
+    "relevant": false
+  },
+  {
+    "id": "2607.25297v1",
+    "url": "http://arxiv.org/pdf/2607.25297v1.pdf",
+    "published": "2026-07-28T05:17:34Z",
+    "title": "Hybrid Analysis for Secure MCP Tool Use in LLM Agents",
+    "authors": [
+      "Ping He",
+      "Yuexiang Xie",
+      "Yaliang Li",
+      "Shouling Ji"
+    ],
+    "downloaded": true,
+    "summarized": true,
+    "points": [
+      "A lifecycle-aware hybrid guard that combines pre-execution parameter auditing with in-sandbox eBPF runtime monitoring and post-execution verification detects 48.3% of unsafe MCP tool calls (116/240) versus 8.3% for a static tool-call-governance baseline and 0% for tool-result text inspection, demonstrating that message-only defenses miss a large fraction of tool-abuse behaviors.",
+      "Runtime evidence is decisive for host-side tool-call hijacking: the approach detects 75.0% of unsafe host-side calls (48/64) while both baselines detect 0%, showing that comparing declared tool calls to observed process/file/network behavior can surface execution-layer substitution that is invisible in the original tool-call message.",
+      "The defense preserves usability with a 3.7% average false-positive rate and adds roughly ~12.4 seconds of LLM auditing latency per tool call (\u22485.9s pre + \u22486.6s post), implying the security gains are deployable for safety-critical agents but may be too costly for ultra-low-latency workflows without caching or selective auditing."
+    ],
+    "one_liner": "The key insight is that securing MCP tools requires tying protocol-level intent to OS-level side effects, because hijacked or malicious tools can look benign in metadata and returned text while behaving dangerously at runtime.",
+    "emoji": "\ud83d\udee1\ufe0f",
+    "tag": "security",
+    "affiliations": [
+      "Zhejiang University",
+      "Alibaba Group"
+    ],
+    "interest_score": 8,
+    "relevant": true,
+    "projects": []
   }
 ]
